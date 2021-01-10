@@ -13,6 +13,8 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/otiai10/marmoset"
 	"github.com/otiai10/spell"
+
+	. "github.com/otiai10/amesh/bot/middleware"
 )
 
 var directMentionExpression = regexp.MustCompile("^<?@")
@@ -103,9 +105,12 @@ func (bot Bot) Webhook(w http.ResponseWriter, r *http.Request) {
 
 func (bot Bot) handle(ctx context.Context, payload *Payload) {
 
+	log := Log(ctx, os.Getenv("GOOGLE_PROJECT_ID"), "amesh")
+	defer log.Close()
+
 	team, err := bot.getTeam(ctx, payload)
 	if err != nil {
-		// TODO: ログ
+		log.Critical(err, Labels{"service": "firestore"})
 		return
 	}
 
@@ -115,7 +120,7 @@ func (bot Bot) handle(ctx context.Context, payload *Payload) {
 	}
 
 	if err := postMessage(message, team); err != nil {
-		// TODO: ログ
+		log.Critical(err, Labels{"service": "slack"})
 		return
 	}
 }

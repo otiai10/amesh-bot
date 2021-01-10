@@ -18,6 +18,7 @@ cloud.google.com/go v0.66.0 h1:DZeAkuQGQqnm9Xv36SbMJEU8aFBz4wL04UpMWPWwjzg=
 cloud.google.com/go v0.66.0/go.mod h1:dgqGAjKCDxyhGTtC9dAREQGUJpkceNm1yt590Qno0Ko=
 cloud.google.com/go v0.71.0 h1:2ha722Z08cmRa0orJrzBaszYQcLbLFcsZHsGSj/kIF4=
 cloud.google.com/go v0.71.0/go.mod h1:qZfY4Y7AEIQwG/fQYD3xrxLNkQZ0Xzf3HGeqCkA6LVM=
+cloud.google.com/go v0.74.0 h1:kpgPA77kSSbjSs+fWHkPTxQ6J5Z2Qkruo5jfXEkHxNQ=
 cloud.google.com/go/bigquery v1.0.1/go.mod h1:i/xbL2UlR5RvWAURpBYZTtm/cXjCha9lbfbpx4poX+o=
 cloud.google.com/go/bigquery v1.3.0/go.mod h1:PjpwJnslEMmckchkHFfq+HTD2DmtT67aNFKH1/VBDHE=
 cloud.google.com/go/bigquery v1.4.0/go.mod h1:S8dzgnTigyfTmLBfrtrhyYhwRxG72rYxvftPBK2Dvzc=
@@ -28,6 +29,8 @@ cloud.google.com/go/datastore v1.0.0/go.mod h1:LXYbyblFSglQ5pkeyhO+Qmw7ukd3C+pD7
 cloud.google.com/go/datastore v1.1.0/go.mod h1:umbIZjpQpHh4hmRpGhH4tLFup+FVzqBi1b3c64qFpCk=
 cloud.google.com/go/firestore v1.3.0 h1:QaBSisuvNi9/o+3nCHqUEfduHCPfhEw2jcUofi0n8oY=
 cloud.google.com/go/firestore v1.3.0/go.mod h1:Qt0gS9Qz9tROrmgFavo36+hdST1FXvmtnGnO0Dr03pU=
+cloud.google.com/go/logging v1.1.2 h1:KNALX0NZn8UJhqKnqoHxhMqyoZfBZoh5wF7CQJZ5XrU=
+cloud.google.com/go/logging v1.1.2/go.mod h1:KrljuAHIw631j9+QXsnq9vDwsrwmdxfGpivMR68M7DY=
 cloud.google.com/go/pubsub v1.0.1/go.mod h1:R0Gpsv3s54REJCy4fxDixWD93lHJMoZTyQ2kNxGRt3I=
 cloud.google.com/go/pubsub v1.1.0/go.mod h1:EwwdRX2sKPjnvnqCa270oGRyludottCI76h+R3AArQw=
 cloud.google.com/go/pubsub v1.2.0/go.mod h1:jhfEVHT8odbXTkndysNHCcx0awwzvfOlguIAii9o8iA=
