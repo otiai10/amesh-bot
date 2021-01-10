@@ -10,10 +10,10 @@ import (
 	"regexp"
 	"strings"
 
-	"cloud.google.com/go/firestore"
 	"github.com/otiai10/marmoset"
 	"github.com/otiai10/spell"
 
+	"github.com/otiai10/amesh/bot/middleware"
 	. "github.com/otiai10/amesh/bot/middleware"
 )
 
@@ -125,29 +125,19 @@ func (bot Bot) handle(ctx context.Context, payload *Payload) {
 	}
 }
 
-func (bot Bot) getTeam(ctx context.Context, payload *Payload) (*Team, error) {
-	client, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_PROJECT_ID"))
-	if err != nil {
-		return nil, err
-	}
-	doc, err := client.Doc("Teams/" + payload.TeamID).Get(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var team Team
-	if err := doc.DataTo(&team); err != nil {
-		return nil, err
-	}
-	return &team, nil
+func (bot Bot) getTeam(ctx context.Context, payload *Payload) (team *Team, err error) {
+	kvs := middleware.KVS(ctx, os.Getenv("GOOGLE_PROJECT_ID"))
+	defer kvs.Close()
+	path := "Teams/" + payload.TeamID
+	err = kvs.Get(path, team)
+	return
 }
 
 func (bot Bot) setTeam(ctx context.Context, oauth OAuthResponse) error {
-	client, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_PROJECT_ID"))
-	if err != nil {
-		return err
-	}
-	_, err = client.Doc("Teams/"+oauth.Team.ID).Set(ctx, oauth)
-	return err
+	kvs := middleware.KVS(ctx, os.Getenv("GOOGLE_PROJECT_ID"))
+	defer kvs.Close()
+	path := "Teams/" + oauth.Team.ID
+	return kvs.Set(path, oauth)
 }
 
 func (bot Bot) createResponseMessage(ctx context.Context, payload *Payload) (message *Message) {
