@@ -14,6 +14,7 @@ import (
 	"github.com/otiai10/spell"
 
 	"github.com/otiai10/amesh/bot/middleware"
+
 	. "github.com/otiai10/amesh/bot/middleware"
 )
 
@@ -110,7 +111,7 @@ func (bot Bot) handle(ctx context.Context, payload *Payload) {
 
 	team, err := bot.getTeam(ctx, payload)
 	if err != nil {
-		log.Critical(err, Labels{"service": "firestore"})
+		log.Critical(err.Error(), Labels{"service": "firestore"})
 		return
 	}
 
@@ -120,12 +121,13 @@ func (bot Bot) handle(ctx context.Context, payload *Payload) {
 	}
 
 	if err := postMessage(message, team); err != nil {
-		log.Critical(err, Labels{"service": "slack"})
+		log.Critical(err.Error(), Labels{"service": "slack"})
 		return
 	}
 }
 
 func (bot Bot) getTeam(ctx context.Context, payload *Payload) (team *Team, err error) {
+	team = &Team{}
 	kvs := middleware.KVS(ctx, os.Getenv("GOOGLE_PROJECT_ID"))
 	defer kvs.Close()
 	path := "Teams/" + payload.TeamID

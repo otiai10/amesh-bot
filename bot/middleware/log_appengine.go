@@ -1,5 +1,3 @@
-//+build appengine
-
 package middleware
 
 import (
@@ -55,6 +53,6 @@ func (c *LogClient) Critical(entry interface{}, labels Labels) {
 }
 
 // Close ...
-func (c *LogClient) Close() {
+func (c *LogClient) Close() error {
 	return c.Client.Close()
 }

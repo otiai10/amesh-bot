@@ -9,7 +9,6 @@ import (
 // KVSClient ...
 type KVSClient struct {
 	Project string
-	Err     error
 	Context context.Context
 	*firestore.Client
 }
