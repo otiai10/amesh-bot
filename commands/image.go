@@ -26,6 +26,11 @@ func (cmd ImageCommand) Match(payload *slack.Payload) bool {
 
 // Handle ...
 func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *slack.Message {
+
+	if payload.Ext.Words.Flag("-h") {
+		return cmd.Help(payload)
+	}
+
 	client := google.Client{
 		APIKey:               os.Getenv("GOOGLE_CUSTOMSEARCH_API_KEY"),
 		CustomSearchEngineID: os.Getenv("GOOGLE_CUSTOMSEARCH_ENGINE_ID"),
@@ -83,7 +88,7 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 func (cmd ImageCommand) Help(payload *slack.Payload) *slack.Message {
 	return &slack.Message{
 		Channel: payload.Event.Channel,
-		Text:    "画像検索コマンド\n```@amesh [image|img] {検索キーワード}```",
+		Text:    "画像検索コマンド\n```@amesh [image|img] {検索キーワード} [-h|-v|-unsafe]```",
 	}
 }
 
