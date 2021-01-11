@@ -1,6 +1,10 @@
 package slack
 
-import "github.com/otiai10/spell"
+import (
+	"strings"
+
+	"github.com/otiai10/spell"
+)
 
 // Payload ...
 // https://api.slack.com/events/app_mention
@@ -37,6 +41,7 @@ type Block struct {
 	ImageURL string    `json:"image_url,omitempty"`
 	AltText  string    `json:"alt_text,omitempty"`
 	Elements []Element `json:"elements,omitempty"`
+	Title    *Element  `json:"title,omitempty"`
 }
 
 // Element ...
@@ -77,3 +82,23 @@ type OAuthResponse struct {
 
 // Team is a wrapper of OAuthResponse to manage collection on Firestore.
 type Team OAuthResponse
+
+// PostMessageResponse ...
+type PostMessageResponse struct {
+	OK               bool     `json:"ok"`
+	Err              string   `json:"error"`
+	Warning          string   `json:"warning"`
+	Warnings         []string `json:"warnings"`
+	ResponseMetadata struct {
+		Warnings []string `json:"warnings"`
+		Messages []string `json:"messages"`
+	} `json:"response_metadata"`
+}
+
+// Error interface
+func (resp *PostMessageResponse) Error() string {
+	if resp.OK {
+		return ""
+	}
+	return strings.Join(resp.ResponseMetadata.Messages, "\n")
+}

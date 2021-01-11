@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strings"
 
 	"github.com/otiai10/marmoset"
@@ -115,7 +116,7 @@ func (bot Bot) handle(ctx context.Context, payload *Payload) {
 		return
 	}
 
-	message := bot.createResponseMessage(context.Background(), payload)
+	message := bot.createResponseMessage(context.Background(), payload, log)
 	if message == nil {
 		return
 	}
@@ -142,7 +143,7 @@ func (bot Bot) setTeam(ctx context.Context, oauth OAuthResponse) error {
 	return kvs.Set(path, oauth)
 }
 
-func (bot Bot) createResponseMessage(ctx context.Context, payload *Payload) (message *Message) {
+func (bot Bot) createResponseMessage(ctx context.Context, payload *Payload, log Logger) (message *Message) {
 
 	if !directMentionExpression.MatchString(payload.Event.Text) {
 		return nil
@@ -155,8 +156,11 @@ func (bot Bot) createResponseMessage(ctx context.Context, payload *Payload) (mes
 			message = &Message{
 				Channel: payload.Event.Channel,
 				Text:    fmt.Sprintf("🤪\n> %v\n```\n%s\n```", payload.Ext.Words, r),
-				// Text: fmt.Sprintf("🤪\n> %v\n```\n%s\n```", payload.Ext.Words, debug.Stack()),
 			}
+			if os.Getenv("GAE_APPLICATION") == "" {
+				message.Text = fmt.Sprintf("🤪\n> %v\n```\n%s\n```", payload.Ext.Words, debug.Stack())
+			}
+			log.Error(r, Labels{"application": "createResponseMessage", "block": "recover"})
 		}
 	}()
 

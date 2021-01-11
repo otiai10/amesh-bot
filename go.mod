@@ -9,7 +9,7 @@ require (
 	github.com/otiai10/amesh v1.1.1
 	github.com/otiai10/goapis v0.0.9
 	github.com/otiai10/marmoset v0.4.0
-	github.com/otiai10/spell v1.0.1
+	github.com/otiai10/spell v1.0.3
 	google.golang.org/api v0.36.0
 	gopkg.in/yaml.v2 v2.4.0
 )

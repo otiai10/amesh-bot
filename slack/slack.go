@@ -24,8 +24,19 @@ func postMessage(message interface{}, team *Team) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
+
 	if res.StatusCode >= 400 {
 		return fmt.Errorf(res.Status)
 	}
+
+	response := &PostMessageResponse{}
+	if err := json.NewDecoder(res.Body).Decode(response); err != nil {
+		return err
+	}
+	if !response.OK {
+		return response
+	}
+
 	return nil
 }
