@@ -37,6 +37,12 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 		verbose = true
 	}
 
+	safe := "active"
+	if payload.Ext.Words.Flag("-unsafe") {
+		payload.Ext.Words = payload.Ext.Words.Remove("-unsafe", 0)
+		safe = "off"
+	}
+
 	words := payload.Ext.Words[1:]
 	if len(words) == 0 {
 		return wrapError(payload, ErrorGoogleNoQueryGiven)
@@ -49,6 +55,7 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 	q.Add("searchType", "image")
 	q.Add("num", "5")
 	q.Add("start", fmt.Sprintf("%d", 1+rand.Intn(10)))
+	q.Add("safe", safe)
 
 	res, err := client.CustomSearch(q)
 	if err != nil {
@@ -97,7 +104,7 @@ func createImageTitle(verbose bool, q url.Values, found, randIndex int, item goo
 
 	lines = append(
 		lines,
-		fmt.Sprintf("offset: %s, count: %s, found: %d, rand: %d", q.Get("start"), q.Get("num"), found, randIndex),
+		fmt.Sprintf("offset: %s, count: %s, found: %d, rand: %d, safe: %s", q.Get("start"), q.Get("num"), found, randIndex, q.Get("safe")),
 	)
 	return &slack.Element{
 		Type: "plain_text",
