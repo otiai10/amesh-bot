@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/otiai10/amesh/bot/slack"
+	"github.com/otiai10/amesh-bot/slack"
 	"github.com/otiai10/goapis/openweathermap"
 )
 

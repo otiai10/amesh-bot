@@ -1,1 +1,4 @@
-bot/.gcloudignore
+.gcloudignore
+.git
+.gitignore
+vendor

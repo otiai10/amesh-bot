@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/otiai10/amesh/bot/slack"
+	"github.com/otiai10/amesh-bot/slack"
 	"github.com/otiai10/amesh/lib/amesh"
 )
 

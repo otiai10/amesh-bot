@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/otiai10/amesh/bot/slack"
+	"github.com/otiai10/amesh-bot/slack"
 	"google.golang.org/api/googleapi"
 )
 

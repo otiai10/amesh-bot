@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/otiai10/amesh/bot/slack"
+	"github.com/otiai10/amesh-bot/slack"
 	"github.com/otiai10/goapis/google"
 )
 

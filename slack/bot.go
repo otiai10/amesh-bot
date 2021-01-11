@@ -13,9 +13,9 @@ import (
 	"github.com/otiai10/marmoset"
 	"github.com/otiai10/spell"
 
-	"github.com/otiai10/amesh/bot/middleware"
+	"github.com/otiai10/amesh-bot/middleware"
 
-	. "github.com/otiai10/amesh/bot/middleware"
+	. "github.com/otiai10/amesh-bot/middleware"
 )
 
 var directMentionExpression = regexp.MustCompile("^<?@")

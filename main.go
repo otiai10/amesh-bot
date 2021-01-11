@@ -1,66 +1,62 @@
-// main
 package main
 
 import (
-	"flag"
-	"fmt"
-	_ "image/gif"
-	_ "image/jpeg"
+	"log"
+	"net/http"
 	"os"
 
-	"github.com/otiai10/amesh/cli"
-	"github.com/otiai10/amesh/lib/rainnow"
-	"github.com/otiai10/gat/render"
-)
-
-var (
-	geo, mask bool
-	usepix    bool
-	scale     float64
-
-	// 以下、タイムラプスでのみ有効
-	lapse   bool
-	minutes int
-	delay   int
-	loop    bool
+	"github.com/otiai10/amesh-bot/commands"
+	"github.com/otiai10/amesh-bot/slack"
+	"github.com/otiai10/marmoset"
+	"gopkg.in/yaml.v2"
 )
 
 func init() {
-	flag.BoolVar(&lapse, "a", false, "タイムラプス表示")
-	flag.IntVar(&minutes, "m", 40, "タイムラプスの取得直近時間（分）")
-	flag.IntVar(&delay, "d", 200, "タイムラプスアニメーションのfps（msec）")
-	flag.BoolVar(&loop, "l", false, "タイムラプスアニメーションをループ表示")
-	flag.BoolVar(&geo, "g", true, "地形を描画")
-	flag.BoolVar(&mask, "b", true, "県境を描画")
-	flag.BoolVar(&usepix, "p", false, "iTermであってもピクセル画で表示")
-	flag.Float64Var(&scale, "s", 0.8, "表示拡大倍率")
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "東京アメッシュをCLIに表示するコマンドです。\n利用可能なオプション:\n")
-		flag.PrintDefaults()
+	router := marmoset.NewRouter()
+	slackbot := slack.Bot{
+		Commands: []slack.Command{
+			commands.AmeshCommand{},
+			commands.ForecastCommand{},
+			commands.ImageCommand{},
+			commands.GoogleCommand{},
+		},
 	}
-	flag.Parse()
+	router.POST("/slack/webhook", slackbot.Webhook)
+	router.GET("/slack/oauth", slackbot.OAuth)
+	http.Handle("/", router)
 }
 
 func main() {
-	renderer := render.GetDefaultRenderer()
-	renderer.SetScale(scale)
-	subcommand := flag.Arg(0)
-	switch loc := rainnow.GetLocation(subcommand); {
-	case loc != nil:
-		onerror(cli.Rainnow(renderer, loc))
-	case subcommand == "typhoon":
-		onerror(cli.Typhoon(renderer))
-	case lapse:
-		onerror(cli.Timelapse(renderer, minutes, delay, loop))
-	default:
-		onerror(cli.Amesh(renderer, geo, mask))
+
+	if os.Getenv("GAE_APPLICATION") == "" {
+		devLoadEnv("./app-secrets.local.yaml")
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
+	log.Printf("Listening on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
 	}
 }
 
-func onerror(err error) {
-	if err == nil {
-		return
+func devLoadEnv(fname string) {
+	type AppConfig struct {
+		EnvVariables map[string]string `yaml:"env_variables"`
 	}
-	fmt.Println(err)
-	os.Exit(1)
+	log.Printf("Loading env variables from %s", fname)
+	f, err := os.Open(fname)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	appconfig := &AppConfig{}
+	if err := yaml.NewDecoder(f).Decode(appconfig); err != nil {
+		log.Fatalln(err)
+	}
+	for name, value := range appconfig.EnvVariables {
+		os.Setenv(name, value)
+	}
 }
