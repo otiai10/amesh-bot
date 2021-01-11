@@ -1,19 +1,14 @@
 package middleware
 
 import (
-	"context"
-	"log"
-
 	"cloud.google.com/go/logging"
 )
 
-// Log ...
-func Log(ctx context.Context, project string, name string) Logger {
-	client, err := logging.NewClient(ctx, project)
-	if err != nil {
-		log.Fatalln("[Cloud Logging]", err)
-	}
-	return &LogClient{Project: project, Name: name, Client: client}
+// LogClient ...
+type LogClient struct {
+	Project string
+	Name    string
+	*logging.Client
 }
 
 // Debug ...

@@ -1,17 +1,25 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"cloud.google.com/go/logging"
 )
 
-// LogClient ...
-type LogClient struct {
-	Project string
-	Name    string
-	*logging.Client
+// Log ...
+func Log(ctx context.Context, project string, name string) Logger {
+	if os.Getenv("GAE_APPLICATION") == "" {
+		return &LocalLogger{}
+	}
+	client, err := logging.NewClient(ctx, project)
+	if err != nil {
+		log.Fatalln("[Cloud Logging]", err)
+	}
+	return &LogClient{Project: project, Name: name, Client: client}
 }
 
 // Labels ...

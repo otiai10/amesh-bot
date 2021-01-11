@@ -1,26 +1,32 @@
 package middleware
 
+import (
+	"os"
+	"reflect"
+	"strings"
+)
+
 // import "context"
 
-// // KVS ...
-// func KVS(ctx context.Context, project string) *KVSClient {
-// 	return &KVSClient{
-// 		Project: project,
-// 	}
-// }
+// LocalKVS ...
+type LocalKVS struct{}
 
-// // Close ...
-// func (kvs *KVSClient) Close() error {
-// 	return nil
-// }
+// Close ...
+func (kvs *LocalKVS) Close() error {
+	return nil
+}
 
-// // Set ...
-// func (kvs *KVSClient) Set(path string, value interface{}) error {
-// 	return nil
-// }
+// Set ...
+func (kvs *LocalKVS) Set(path string, value interface{}) error {
+	return nil
+}
 
-// // Get ...
-// func (kvs *KVSClient) Get(path string, dest interface{}) error {
-// 	// TODO: なんか返す. Local開発用BotOAuthTokenとか
-// 	return nil
-// }
+// Get ...
+func (kvs *LocalKVS) Get(path string, dest interface{}) error {
+	if strings.HasPrefix(path, "Teams/") {
+		reflect.ValueOf(dest).Elem().
+			FieldByName("AccessToken").
+			Set(reflect.ValueOf(os.Getenv("SLACK_BOT_USER_OAUTH_ACCESS_TOKEN")))
+	}
+	return nil
+}

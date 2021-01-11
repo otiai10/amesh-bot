@@ -2,22 +2,15 @@ package middleware
 
 import (
 	"context"
-	"log"
 
 	"cloud.google.com/go/firestore"
 )
 
-// KVS ...
-func KVS(ctx context.Context, project string) *KVSClient {
-	client, err := firestore.NewClient(ctx, project)
-	if err != nil {
-		log.Fatalln("[Firestore Client]", err)
-	}
-	return &KVSClient{
-		Project: project,
-		Client:  client,
-		Context: ctx,
-	}
+// KVSClient ...
+type KVSClient struct {
+	Project string
+	Context context.Context
+	*firestore.Client
 }
 
 // Close ...
