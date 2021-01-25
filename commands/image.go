@@ -68,18 +68,24 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 		return wrapError(payload, err)
 	}
 	if len(res.Items) == 0 {
-		return wrapError(payload, ErrorGoogleNotFound)
+		text := strings.Join(cmd.searchMetaInfo(q, 0, 0), "\n")
+		return &slack.Message{Channel: payload.Event.Channel, Text: "Not Found\n> " + text}
 	}
 
-	// TODO: ランダムにひとつ選ぶ
 	index := rand.Intn(len(res.Items))
 	item := res.Items[index]
+
+	var title *slack.Element
+	if verbose {
+		lines := append(cmd.searchMetaInfo(q, len(res.Items), index), cmd.searchResultItemInfo(&item)...)
+		title = &slack.Element{Type: "plain_text", Text: strings.Join(lines, "\n")}
+	}
 
 	block := slack.Block{
 		Type:     "image",
 		ImageURL: item.Link,
 		AltText:  query,
-		Title:    createImageTitle(verbose, q, len(res.Items), index, item),
+		Title:    title,
 	}
 
 	return &slack.Message{Channel: payload.Event.Channel, Blocks: []slack.Block{block}}
@@ -93,27 +99,24 @@ func (cmd ImageCommand) Help(payload *slack.Payload) *slack.Message {
 	}
 }
 
-func createImageTitle(verbose bool, q url.Values, found, randIndex int, item google.CustomSearchItem) *slack.Element {
-	if !verbose {
-		return nil
+// 基本的な検索情報をテキストにするやつ
+func (cmd ImageCommand) searchMetaInfo(q url.Values, found, index int) (lines []string) {
+	return []string{
+		"query:\t" + q.Get("q"),
+		fmt.Sprintf(
+			"num: %s, start: %s, safe: %s, found: %d, random: %d",
+			q.Get("num"), q.Get("start"), q.Get("safe"), found, index,
+		),
 	}
-	// {{{ サニタイズ
-	q.Del("key")
-	q.Del("cx")
-	q.Del("searchType")
-	// }}}
-	lines := []string{
-		"query: " + q.Get("q"),
-		"context: " + item.Image.ContextLink,
-	}
-	q.Del("q")
+}
 
-	lines = append(
-		lines,
-		fmt.Sprintf("offset: %s, count: %s, found: %d, rand: %d, safe: %s", q.Get("start"), q.Get("num"), found, randIndex, q.Get("safe")),
-	)
-	return &slack.Element{
-		Type: "plain_text",
-		Text: strings.Join(lines, "\n"),
+// アイテムが見つかったときの結果verboseをテキストにするやつ
+func (cmd ImageCommand) searchResultItemInfo(item *google.CustomSearchItem) (lines []string) {
+	if item == nil {
+		return []string{}
+	}
+	return []string{
+		fmt.Sprintf("context:\t%s", item.Image.ContextLink),
+		fmt.Sprintf("title:\t%s", item.HTMLTitle),
 	}
 }
