@@ -139,6 +139,8 @@ github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6
 github.com/otiai10/gat v0.0.0-20190422041449-67c01b969755/go.mod h1:4KfaQUq7V21ZOGpdWaxC+djudOuhU4tvVQi8ZqrF+as=
 github.com/otiai10/goapis v0.0.9 h1:wX7K4zjydyfma99kZNx/ekmP43ZsNdViMSGQ8VOR3/0=
 github.com/otiai10/goapis v0.0.9/go.mod h1:ydcqNGdAZ81IEmPoujgwktC66537nylGSaSw7xUnpaM=
+github.com/otiai10/goapis v0.0.10 h1:ioayrOq7gxQQHp4Eb+5eSwBEeB7fBGf5Jwykay9OVhI=
+github.com/otiai10/goapis v0.0.10/go.mod h1:ydcqNGdAZ81IEmPoujgwktC66537nylGSaSw7xUnpaM=
 github.com/otiai10/marmoset v0.4.0 h1:Hg59lQI7qQowBEdsAJ/+VDTEospTBzXX/A1Gsw4mlvA=
 github.com/otiai10/marmoset v0.4.0/go.mod h1:t2q6dXWZ9YcFdRREDApX4bCmfQnL3isJ2dgl8ychlXg=
 github.com/otiai10/mint v1.2.3/go.mod h1:YnfyPNhBvnY8bW4SGQHCs/aAFhkgySlMZbrF5U0bOVw=

@@ -34,6 +34,7 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 	client := google.Client{
 		APIKey:               os.Getenv("GOOGLE_CUSTOMSEARCH_API_KEY"),
 		CustomSearchEngineID: os.Getenv("GOOGLE_CUSTOMSEARCH_ENGINE_ID"),
+		Eager:                true, // 検索結果が0の場合、条件を変えて再検索をかける
 	}
 
 	verbose := false
@@ -58,7 +59,7 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 	q := url.Values{}
 	q.Add("q", query)
 	q.Add("searchType", "image")
-	q.Add("num", "5")
+	q.Add("num", "10")
 	q.Add("start", fmt.Sprintf("%d", 1+rand.Intn(10)))
 	q.Add("safe", safe)
 
