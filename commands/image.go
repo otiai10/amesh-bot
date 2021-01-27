@@ -84,7 +84,7 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 
 	block := slack.Block{
 		Type:     "image",
-		ImageURL: item.Image.ThumbnailLink,
+		ImageURL: item.Link,
 		AltText:  query,
 		Title:    title,
 	}
