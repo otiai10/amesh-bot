@@ -65,7 +65,8 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 
 	res, err := client.CustomSearch(q)
 	if err != nil {
-		return wrapError(payload, err)
+		text := strings.Join(cmd.searchMetaInfo(q, 0, 0), "\n")
+		return &slack.Message{Channel: payload.Event.Channel, Text: fmt.Sprintf("%v\n> %s", err, text)}
 	}
 	if len(res.Items) == 0 {
 		text := strings.Join(cmd.searchMetaInfo(q, 0, 0), "\n")
