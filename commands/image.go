@@ -118,6 +118,6 @@ func (cmd ImageCommand) searchResultItemInfo(item *google.CustomSearchItem) (lin
 	}
 	return []string{
 		fmt.Sprintf("context:\t%s", item.Image.ContextLink),
-		fmt.Sprintf("title:\t%s", item.HTMLTitle),
+		fmt.Sprintf("title:\t%s", item.Title),
 	}
 }
