@@ -122,7 +122,10 @@ func (bot Bot) handle(ctx context.Context, payload *Payload) {
 	}
 
 	if err := postMessage(message, team); err != nil {
-		log.Critical(err.Error(), Labels{"service": "slack"})
+		log.Critical(map[string]interface{}{
+			"error":            err.Error(),
+			"original_message": message,
+		}, Labels{"service": "slack"})
 		return
 	}
 }
