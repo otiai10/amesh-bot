@@ -19,7 +19,10 @@ import (
 	. "github.com/otiai10/amesh-bot/middleware"
 )
 
-var directMentionExpression = regexp.MustCompile("^<?@")
+var (
+	directMentionExpression = regexp.MustCompile("^<?@")
+	reminderExpression      = regexp.MustCompile("^(リマインダー|Reminder) ?: ?")
+)
 
 // Bot ...
 type Bot struct {
@@ -148,11 +151,16 @@ func (bot Bot) setTeam(ctx context.Context, oauth OAuthResponse) error {
 
 func (bot Bot) createResponseMessage(ctx context.Context, payload *Payload, log Logger) (message *Message) {
 
-	if !directMentionExpression.MatchString(payload.Event.Text) {
+	text := payload.Event.Text
+	if reminderExpression.MatchString(text) {
+		text = reminderExpression.ReplaceAllString(strings.TrimSuffix(text, "."), "")
+	}
+
+	if !directMentionExpression.MatchString(text) {
 		return nil
 	}
 
-	payload.Ext.Words = spell.Words(strings.Fields(payload.Event.Text)[1:])
+	payload.Ext.Words = spell.Words(strings.Fields(text)[1:])
 
 	defer func() {
 		if r := recover(); r != nil {
