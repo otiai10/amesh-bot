@@ -57,7 +57,7 @@ func (cmd AmeshCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 	}
 
 	// 画像の取得と合成
-	img, err := entry.Image(true, true)
+	img, err := entry.GetImage(true, true)
 	if err != nil {
 		return wrapError(payload, err)
 	}
