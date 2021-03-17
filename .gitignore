@@ -2,3 +2,4 @@ vendor
 app-secrets.yaml
 app-secrets.*.yaml
 !app-secrets.example.yaml
+amesh-bot-*.json

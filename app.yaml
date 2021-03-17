@@ -1,8 +1,10 @@
 runtime: go112
 env: standard
 
-includes:
-- app-secrets.yaml
+# # This script is supposed to be called from GitHub Actions.
+# # All the secrets should be provided by GitHub Repo Secrets.
+# includes:
+# - app-secrets.yaml
 
 handlers:
 - url: /.*

@@ -1,0 +1,9 @@
+runtime: go112
+env: standard
+
+includes:
+- app-secrets.yaml
+
+handlers:
+- url: /.*
+  script: auto
