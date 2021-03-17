@@ -1,10 +1,10 @@
 runtime: go112
 env: standard
 
-# # This script is supposed to be called from GitHub Actions.
-# # All the secrets should be provided by GitHub Repo Secrets.
-# includes:
-# - app-secrets.yaml
+# app-secrets should be created by a step in GitHub Actions.
+# See .github/workflows/gae-deploy.yml for more details.
+includes:
+- app-secrets.yaml
 
 handlers:
 - url: /.*
