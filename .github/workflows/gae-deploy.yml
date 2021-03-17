@@ -42,6 +42,6 @@ jobs:
       run: 'echo "$APP_SECRETS_YAML" > app-secrets.yaml'
       shell: bash
       env:
-        SSH_KEY: ${{ secrets.APP_SECRETS_YAML }}
+        APP_SECRETS_YAML: ${{ secrets.APP_SECRETS_YAML }}
     - name: Deploy
       run: gcloud app deploy ./app.yaml --quiet
