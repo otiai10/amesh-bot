@@ -135,6 +135,9 @@ func (bot Bot) handle(ctx context.Context, payload *Payload) {
 
 func (bot Bot) getTeam(ctx context.Context, payload *Payload) (team *Team, err error) {
 	team = &Team{}
+	if payload.APIAppID == os.Getenv("DEV_SLACK_APP_ID") {
+		return &Team{AccessToken: os.Getenv("DEV_SLACK_BOT_USER_OAUTH_TOKEN")}, err
+	}
 	kvs := middleware.KVS(ctx, os.Getenv("GOOGLE_PROJECT_ID"))
 	defer kvs.Close()
 	path := "Teams/" + payload.TeamID
