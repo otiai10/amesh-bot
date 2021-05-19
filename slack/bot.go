@@ -196,6 +196,9 @@ func (bot Bot) createResponseMessage(ctx context.Context, payload *Payload, log 
 
 func (bot Bot) createHelpMessage(ctx context.Context, payload *Payload) *Message {
 	message := &Message{Channel: payload.Event.Channel}
+	if payload.APIAppID == os.Getenv("DEV_SLACK_APP_ID") {
+		message.Text = ":robot_face: :rotating_light: :wrench: \n"
+	}
 	for _, cmd := range bot.Commands {
 		message.Text += cmd.Help(payload).Text + "\n"
 	}
