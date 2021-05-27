@@ -1,8 +1,10 @@
 runtime: go112
 env: standard
 
+service: dev
+
 includes:
-- app-secrets.yaml
+- app-secrets.dev.yaml
 
 handlers:
 - url: /.*

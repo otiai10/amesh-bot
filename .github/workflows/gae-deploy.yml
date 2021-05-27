@@ -2,7 +2,7 @@ name: GAE Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
 
@@ -28,6 +28,7 @@ jobs:
 
   gae-deploy:
     name: GAE Deploy
+    if: github.ref == 'refs/heads/main'
     needs: [validate]
     runs-on: ubuntu-latest
     steps:
@@ -45,3 +46,24 @@ jobs:
         APP_SECRETS_YAML: ${{ secrets.APP_SECRETS_YAML }}
     - name: Deploy
       run: gcloud app deploy ./app.yaml --quiet
+
+  gae-deploy-dev:
+    name: GAE Deploy DEV
+    if: github.ref == 'refs/heads/develop'
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@master
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+    - name: Recover App Secrets DEV
+      run: 'echo "$APP_SECRETS_DEV_YAML" > app-secrets.dev.yaml'
+      shell: bash
+      env:
+        APP_SECRETS_DEV_YAML: ${{ secrets.APP_SECRETS_DEV_YAML }}
+    - name: Deploy DEV
+      run: gcloud app deploy ./app.dev.yaml --quiet
