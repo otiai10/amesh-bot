@@ -22,6 +22,17 @@ import (
 var (
 	directMentionExpression = regexp.MustCompile("^<?@")
 	reminderExpression      = regexp.MustCompile("^(リマインダー|Reminder) ?: ?")
+	successHTML             = `
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+		<style>
+			body { display: flex; flex-direction: column; align-items: center; font-family: Helvetica; text-align: center; }
+			code { background-color: #f0f0f0; padding: 4px; font-weight: bold; } a { color: #5E58C7; } footer { margin: 32px; }
+		</style>
+		<h1>amesh is successfully installed!</h1>
+		<div>Invite <b>@amesh</b> to your channel and mention <code>@amesh help</code> 🤖</div>
+		<a href="https://app.slack.com/client/%s">Back to your Slack.</a>
+		<footer>Know more about <a href="https://github.com/otiai10/amesh-bot">amesh-bot</a> on GitHub.</footer>
+	`
 )
 
 // Bot ...
@@ -77,7 +88,8 @@ func (bot Bot) OAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Success!")
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, successHTML, oauth.Team.ID)
 }
 
 // Webhook handles webhook request from Slack.
