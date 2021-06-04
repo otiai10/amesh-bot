@@ -59,7 +59,7 @@ func (cmd ForecastCommand) Handle(ctx context.Context, payload *slack.Payload) *
 	for _, group := range res.GroupByDate(loc) {
 		message.Text += ForecastRowBuilder{
 			Placeholder: placeholder,
-			IncludTemp:  payload.Ext.Words.Flag("-t"),
+			IncludeTemp: !payload.Ext.Words.Flag("-s"),
 		}.build(group) + "\n"
 	}
 
@@ -70,7 +70,7 @@ func (cmd ForecastCommand) Handle(ctx context.Context, payload *slack.Payload) *
 func (cmd ForecastCommand) Help(payload *slack.Payload) *slack.Message {
 	return &slack.Message{
 		Channel: payload.Event.Channel,
-		Text:    "天気予報コマンド\n```@amesh [予報|forecast] [-t|-h]```",
+		Text:    "天気予報コマンド\n```@amesh [予報|forecast] [-s|-h]```",
 	}
 }
 
@@ -103,9 +103,9 @@ type ForecastRowBuilder struct {
 	Placeholder string
 
 	// 気温
-	IncludTemp bool
-	MaxCelsius float32
-	MinCelsius float32
+	IncludeTemp bool
+	MaxCelsius  float32
+	MinCelsius  float32
 }
 
 func (row ForecastRowBuilder) build(forecast []openweathermap.Forecast) string {
@@ -133,7 +133,7 @@ func (row ForecastRowBuilder) build(forecast []openweathermap.Forecast) string {
 	for h := 21; h > last.LocalTime.Hour(); h -= 3 {
 		row.Body += row.Placeholder
 	}
-	if row.IncludTemp {
+	if row.IncludeTemp {
 		return fmt.Sprintf("%s [%.1f / %.1f]\n%s", row.Head, row.MinCelsius, row.MaxCelsius, row.Body)
 	}
 	return fmt.Sprintf("%s %s", row.Head, row.Body)
