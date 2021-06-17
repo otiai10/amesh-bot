@@ -19,6 +19,7 @@ func init() {
 			commands.ForecastCommand{},
 			commands.ImageCommand{},
 			commands.GoogleCommand{},
+			commands.EchoCommand{},
 		},
 	}
 	router.POST("/slack/webhook", slackbot.Webhook)
