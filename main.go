@@ -5,34 +5,31 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/commands"
-	"github.com/otiai10/amesh-bot/slack"
+	"github.com/otiai10/amesh-bot/controllers"
+	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/marmoset"
-	"gopkg.in/yaml.v2"
 )
 
 func init() {
-	router := marmoset.NewRouter()
-	slackbot := slack.Bot{
-		Commands: []slack.Command{
+	r := marmoset.NewRouter()
+	b := &bot.Bot{
+		Commands: []bot.Command{
 			commands.AmeshCommand{},
-			commands.ForecastCommand{},
-			commands.ImageCommand{},
-			commands.GoogleCommand{},
-			commands.EchoCommand{},
 		},
 	}
-	router.POST("/slack/webhook", slackbot.Webhook)
-	router.GET("/slack/oauth", slackbot.OAuth)
-	http.Handle("/", router)
+	c := controllers.Controller{
+		Bot:       b,
+		Slack:     &service.SlackOAuthClient{},
+		Datastore: service.NewDatastore(os.Getenv("GOOGLE_PROJECT_ID")),
+	}
+	r.POST("/slack/webhook", c.Webhook)
+	r.GET("/slack/oauth", c.OAuth)
+	http.Handle("/", r)
 }
 
 func main() {
-
-	if os.Getenv("GAE_APPLICATION") == "" {
-		devLoadEnv("./app-secrets.local.yaml")
-	}
-
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -41,23 +38,5 @@ func main() {
 	log.Printf("Listening on port %s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func devLoadEnv(fname string) {
-	type AppConfig struct {
-		EnvVariables map[string]string `yaml:"env_variables"`
-	}
-	log.Printf("Loading env variables from %s", fname)
-	f, err := os.Open(fname)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	appconfig := &AppConfig{}
-	if err := yaml.NewDecoder(f).Decode(appconfig); err != nil {
-		log.Fatalln(err)
-	}
-	for name, value := range appconfig.EnvVariables {
-		os.Setenv(name, value)
 	}
 }
