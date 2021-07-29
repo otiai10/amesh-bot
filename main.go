@@ -9,13 +9,18 @@ import (
 	"github.com/otiai10/amesh-bot/commands"
 	"github.com/otiai10/amesh-bot/controllers"
 	"github.com/otiai10/amesh-bot/service"
+	"github.com/otiai10/goapis/google"
 	"github.com/otiai10/marmoset"
 )
 
 func init() {
 	r := marmoset.NewRouter()
 	b := &bot.Bot{
-		Commands: []bot.Command{},
+		Commands: []bot.Command{
+			commands.ImageCommand{
+				Search: &google.Client{APIKey: os.Getenv("GOOGLE_CUSTOMSEARCH_API_KEY"), CustomSearchEngineID: os.Getenv("GOOGLE_CUSTOMSEARCH_ENGINE_ID")},
+			},
+		},
 		Default:  commands.AmeshCommand{Storage: &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"}},
 		NotFound: commands.NotFound{},
 	}

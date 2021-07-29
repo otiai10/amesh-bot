@@ -184,6 +184,8 @@ github.com/otiai10/copy v1.2.0/go.mod h1:rrF5dJ5F0t/EWSYODDu4j9/vEeYHMkc8jt0zJCh
 github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95/go.mod h1:9qAhocn7zKJG+0mI8eUu6xqkFDYS2kb2saOteoSB3cE=
 github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6j4vs=
 github.com/otiai10/gat v0.0.0-20210414142218-6cc5ed2c158d/go.mod h1:JKhjIehcKT4k6v7yvgMhq/ffRF4tE4dbn7mGv7aE8/g=
+github.com/otiai10/goapis v0.0.14 h1:2uAmPFS4DAsY094bzCjo/pF10ELi0KEG/nenK3xxPWw=
+github.com/otiai10/goapis v0.0.14/go.mod h1:ydcqNGdAZ81IEmPoujgwktC66537nylGSaSw7xUnpaM=
 github.com/otiai10/largo v0.0.0-20210729052038-8091de38f3ad h1:d4na4DXpw7y+ZyRTWVChFERCHggabdVm77f5iAm9jU4=
 github.com/otiai10/largo v0.0.0-20210729052038-8091de38f3ad/go.mod h1:Cifa9C6vV3YNUc1JSgMAeObvtOpbFWnh4an33eG6Bzw=
 github.com/otiai10/marmoset v0.4.0 h1:Hg59lQI7qQowBEdsAJ/+VDTEospTBzXX/A1Gsw4mlvA=
