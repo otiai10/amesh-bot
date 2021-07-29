@@ -19,32 +19,34 @@ type (
 
 type (
 	Bot struct {
+		// 特定の発言にMatchしたら発動するコマンド
 		Commands []Command
-		Default  Command
+		// コマンドが無くても発動するコマンド
+		Default Command
+		// 不明なコマンドを受け取った場合の挙動
 		NotFound Command
 	}
 )
 
 func (b *Bot) Handle(ctx context.Context, team slack.OAuthV2Response, event slackevents.AppMentionEvent) {
 	client := service.NewSlackClient(team.AccessToken)
-	// TODO: Handle top-level help
 	for _, cmd := range b.Commands {
 		if cmd.Match(event) {
 			if err := cmd.Execute(ctx, client, event); err != nil {
-				fmt.Printf("[ERROR] %T %v\n", cmd, err.Error())
+				fmt.Printf("[ERROR] %T: %v\n", cmd, err.Error())
 			}
 			return
 		}
 	}
 	if b.Default.Match(event) {
 		if err := b.Default.Execute(ctx, client, event); err != nil {
-			fmt.Printf("[ERROR] %T %v\n", b.Default, err.Error())
+			fmt.Printf("[ERROR] %T: %v\n", b.Default, err.Error())
 		}
 		return
 	}
 	if b.NotFound != nil {
 		if err := b.NotFound.Execute(ctx, client, event); err != nil {
-			fmt.Printf("[ERROR] %T %v\n", b.NotFound, err.Error())
+			fmt.Printf("[ERROR] %T: %v\n", b.NotFound, err.Error())
 		}
 	}
 }
