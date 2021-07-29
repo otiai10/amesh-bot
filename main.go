@@ -15,9 +15,8 @@ import (
 func init() {
 	r := marmoset.NewRouter()
 	b := &bot.Bot{
-		Commands: []bot.Command{
-			commands.AmeshCommand{},
-		},
+		Commands: []bot.Command{},
+		Default:  commands.AmeshCommand{},
 	}
 	c := controllers.Controller{
 		Bot:       b,

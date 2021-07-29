@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/otiai10/largo"
+
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/slack-go/slack/slackevents"
 )
@@ -14,7 +16,12 @@ type AmeshCommand struct{}
 
 // Match ...
 func (cmd AmeshCommand) Match(ev slackevents.AppMentionEvent) bool {
-	return true
+	// 第1要素はメンションUIDの部分だと思うので
+	tokens := largo.Tokenize(ev.Text)[1:]
+	if len(tokens) == 0 {
+		return true
+	}
+	return false
 }
 
 func (cmd AmeshCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) error {

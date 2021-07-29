@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/slack-go/slack"
@@ -19,6 +20,7 @@ type (
 type (
 	Bot struct {
 		Commands []Command
+		Default  Command
 	}
 )
 
@@ -27,8 +29,13 @@ func (b *Bot) Handle(ctx context.Context, team slack.OAuthV2Response, event slac
 	// TODO: Handle top-level help
 	for _, cmd := range b.Commands {
 		if cmd.Match(event) {
-			// TODO: error handling
-			cmd.Execute(ctx, client, event)
+			if err := cmd.Execute(ctx, client, event); err != nil {
+				fmt.Printf("[ERROR] %T %v\n", cmd, err.Error())
+			}
+			return
 		}
+	}
+	if err := b.Default.Execute(ctx, client, event); err != nil {
+		fmt.Printf("[ERROR] %T %v\n", b.Default, err.Error())
 	}
 }
