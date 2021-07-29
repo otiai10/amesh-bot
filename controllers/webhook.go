@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 
 func (c *Controller) Webhook(w http.ResponseWriter, req *http.Request) {
 
-	ctx := req.Context()
 	render := marmoset.Render(w, true)
 
 	payload := Payload{}
@@ -52,8 +52,7 @@ func (c *Controller) Webhook(w http.ResponseWriter, req *http.Request) {
 		team.AccessToken = os.Getenv("DEV_SLACK_BOT_USER_OAUTH_TOKEN")
 	}
 
-	fmt.Printf("%+v\n", team)
-	go c.Bot.Handle(ctx, team, payload.Event)
+	go c.Bot.Handle(context.Background(), team, payload.Event)
 
 	return
 

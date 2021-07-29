@@ -21,6 +21,7 @@ type (
 	Bot struct {
 		Commands []Command
 		Default  Command
+		NotFound Command
 	}
 )
 
@@ -35,7 +36,15 @@ func (b *Bot) Handle(ctx context.Context, team slack.OAuthV2Response, event slac
 			return
 		}
 	}
-	if err := b.Default.Execute(ctx, client, event); err != nil {
-		fmt.Printf("[ERROR] %T %v\n", b.Default, err.Error())
+	if b.Default.Match(event) {
+		if err := b.Default.Execute(ctx, client, event); err != nil {
+			fmt.Printf("[ERROR] %T %v\n", b.Default, err.Error())
+		}
+		return
+	}
+	if b.NotFound != nil {
+		if err := b.NotFound.Execute(ctx, client, event); err != nil {
+			fmt.Printf("[ERROR] %T %v\n", b.NotFound, err.Error())
+		}
 	}
 }

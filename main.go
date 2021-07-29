@@ -16,7 +16,9 @@ func init() {
 	r := marmoset.NewRouter()
 	b := &bot.Bot{
 		Commands: []bot.Command{},
-		Default:  commands.AmeshCommand{},
+		Default: commands.AmeshCommand{
+			Storage: &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"},
+		},
 	}
 	c := controllers.Controller{
 		Bot:       b,
