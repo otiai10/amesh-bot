@@ -18,6 +18,12 @@ type (
 		AccessToken string
 	}
 	SlackOAuthClient struct{}
+
+	SlackMsg struct {
+		Channel string        `json:"channel"`
+		Text    string        `json:"text,omitempty"`
+		Blocks  []slack.Block `json:"blocks,omitempty"`
+	}
 )
 
 func NewSlackClient(accessToken string) *SlackClient {

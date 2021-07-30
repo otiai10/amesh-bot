@@ -59,11 +59,7 @@ func (cmd AmeshCommand) Execute(ctx context.Context, client *service.SlackClient
 		return fmt.Errorf("failed to parse arguments: %v", err)
 	}
 
-	msg := struct {
-		Channel string        `json:"channel"`
-		Text    string        `json:"text,omitempty"`
-		Blocks  []slack.Block `json:"blocks,omitempty"`
-	}{Channel: event.Channel}
+	msg := service.SlackMsg{Channel: event.Channel}
 
 	tokyo, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
@@ -183,5 +179,5 @@ func (cmd AmeshCommand) uploadEntryToStorage(ctx context.Context, entry *amesh.E
 
 // Help ...
 func (cmd AmeshCommand) Help() string {
-	return ""
+	return "アメッシュ表示コマンド\n```@amesh [-a]```"
 }

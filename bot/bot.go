@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/otiai10/amesh-bot/service"
+	"github.com/otiai10/largo"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 )
@@ -30,23 +31,36 @@ type (
 
 func (b *Bot) Handle(ctx context.Context, team slack.OAuthV2Response, event slackevents.AppMentionEvent) {
 	client := service.NewSlackClient(team.AccessToken)
+	err := b.handle(ctx, client, event)
+	if err != nil {
+		fmt.Printf("[ERROR] bot.Handle: %v\n%+v", err, event)
+	}
+}
+
+func (b *Bot) handle(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
+	if tokens := largo.Tokenize(event.Text)[1:]; len(tokens) != 0 && tokens[0] == "help" {
+		return b.help(ctx, client, event)
+	}
 	for _, cmd := range b.Commands {
 		if cmd.Match(event) {
-			if err := cmd.Execute(ctx, client, event); err != nil {
-				fmt.Printf("[ERROR] %T: %v\n", cmd, err.Error())
-			}
-			return
+			err = cmd.Execute(ctx, client, event)
+			return b.errwrap(err, cmd)
 		}
 	}
 	if b.Default.Match(event) {
-		if err := b.Default.Execute(ctx, client, event); err != nil {
-			fmt.Printf("[ERROR] %T: %v\n", b.Default, err.Error())
-		}
-		return
+		err = b.Default.Execute(ctx, client, event)
+		return b.errwrap(err, b.Default)
 	}
 	if b.NotFound != nil {
-		if err := b.NotFound.Execute(ctx, client, event); err != nil {
-			fmt.Printf("[ERROR] %T: %v\n", b.NotFound, err.Error())
-		}
+		err = b.NotFound.Execute(ctx, client, event)
+		return
 	}
+	return
+}
+
+func (b *Bot) errwrap(err error, cmd interface{}) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%T: %v", cmd, err.Error())
 }

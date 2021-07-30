@@ -63,11 +63,7 @@ func (cmd ImageCommand) Execute(ctx context.Context, client *service.SlackClient
 		return err
 	}
 
-	msg := struct {
-		Channel string        `json:"channel"`
-		Text    string        `json:"text,omitempty"`
-		Blocks  []slack.Block `json:"blocks,omitempty"`
-	}{Channel: event.Channel}
+	msg := service.SlackMsg{Channel: event.Channel}
 
 	if len(result.Items) == 0 {
 		q.Del("cx")
@@ -89,5 +85,5 @@ func (cmd ImageCommand) Execute(ctx context.Context, client *service.SlackClient
 
 // Help ...
 func (cmd ImageCommand) Help() string {
-	return ""
+	return "画像検索コマンド\n```@amesh img {query}```"
 }
