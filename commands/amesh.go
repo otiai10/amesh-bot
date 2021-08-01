@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image/gif"
 	"image/png"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -30,20 +31,16 @@ type AmeshCommand struct {
 	Storage CloudStorage
 }
 
-func (cmd AmeshCommand) newFlagSet(animated *bool, help *bytes.Buffer) *largo.FlagSet {
-	if animated == nil {
-		a := false
-		animated = &a
-	}
+func (cmd AmeshCommand) newFlagSet(animated bool, help io.Writer) *largo.FlagSet {
 	fset := largo.NewFlagSet("", largo.ContinueOnError)
 	fset.Output = help
-	fset.BoolVar(animated, "animated", false, "GIF画像でタイムラプス表示").Alias("a")
+	fset.BoolVar(&animated, "animated", false, "GIF画像でタイムラプス表示").Alias("a")
 	return fset
 }
 
 // Match ...
 func (cmd AmeshCommand) Match(event slackevents.AppMentionEvent) bool {
-	fset := cmd.newFlagSet(nil, nil)
+	fset := cmd.newFlagSet(false, Discard)
 	fset.Parse(largo.Tokenize(event.Text)[1:])
 	return len(fset.Rest()) == 0
 }
@@ -52,7 +49,7 @@ func (cmd AmeshCommand) Execute(ctx context.Context, client *service.SlackClient
 
 	var animated bool
 	help := bytes.NewBuffer(nil)
-	fset := cmd.newFlagSet(&animated, help)
+	fset := cmd.newFlagSet(animated, help)
 
 	tokens := strings.Fields(event.Text)[1:]
 	if err := fset.Parse(tokens); err != nil {
@@ -69,7 +66,7 @@ func (cmd AmeshCommand) Execute(ctx context.Context, client *service.SlackClient
 
 	switch {
 	case fset.HelpRequested():
-		msg.Text = help.String()
+		msg.Text = fmt.Sprintf("デフォルトのアメッシュコマンド\n```@amesh [-a] [-h]\n%v```", help.String())
 	case animated:
 		block, err := cmd.ameshAnimated(ctx, now)
 		if err != nil {
@@ -177,7 +174,7 @@ func (cmd AmeshCommand) uploadEntryToStorage(ctx context.Context, entry *amesh.E
 	return nil
 }
 
-// Help ...
+// Help ヘルプ一覧に表示されるもの
 func (cmd AmeshCommand) Help() string {
-	return "アメッシュ表示コマンド\n```@amesh [-a]```"
+	return "アメッシュ表示コマンド\n```@amesh [-a] [-h]```"
 }
