@@ -2,8 +2,9 @@ package bot
 
 import (
 	"context"
-	"fmt"
+	"os"
 
+	"cloud.google.com/go/logging"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/largo"
 	"github.com/slack-go/slack"
@@ -31,36 +32,45 @@ type (
 
 func (b *Bot) Handle(ctx context.Context, team slack.OAuthV2Response, event slackevents.AppMentionEvent) {
 	client := service.NewSlackClient(team.AccessToken)
-	err := b.handle(ctx, client, event)
+
+	lg, err := logging.NewClient(ctx, os.Getenv("GOOGLE_PROJECT_ID"))
 	if err != nil {
-		fmt.Printf("[ERROR] bot.Handle: %v\n%+v", err, event)
+		panic(err)
+	}
+	defer lg.Close()
+
+	logger := lg.Logger("bot")
+	if os.Getenv("DEV_SLACK_APP_ID") != "" {
+		logger.Log(logging.Entry{Severity: logging.Debug, Payload: event})
+	}
+
+	cmderr := b.handle(ctx, client, event)
+	if err != nil {
+		logger.Log(logging.Entry{
+			Severity: logging.Error,
+			Payload:  cmderr,
+			Labels:   cmderr.labels(),
+		})
 	}
 }
 
-func (b *Bot) handle(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
+func (b *Bot) handle(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) *CommandError {
 	if tokens := largo.Tokenize(event.Text)[1:]; len(tokens) != 0 && tokens[0] == "help" {
-		return b.help(ctx, client, event)
+		return errwrap(b.Help(ctx, client, event), "builtin:help", event)
 	}
 	for _, cmd := range b.Commands {
 		if cmd.Match(event) {
-			err = cmd.Execute(ctx, client, event)
-			return b.errwrap(err, cmd)
+			err := cmd.Execute(ctx, client, event)
+			return errwrap(err, cmd, event)
 		}
 	}
 	if b.Default.Match(event) {
-		err = b.Default.Execute(ctx, client, event)
-		return b.errwrap(err, b.Default)
+		err := b.Default.Execute(ctx, client, event)
+		return errwrap(err, b.Default, event)
 	}
 	if b.NotFound != nil {
-		err = b.NotFound.Execute(ctx, client, event)
-		return
+		err := b.NotFound.Execute(ctx, client, event)
+		return errwrap(err, "builtin:notfound", event)
 	}
-	return
-}
-
-func (b *Bot) errwrap(err error, cmd interface{}) error {
-	if err == nil {
-		return nil
-	}
-	return fmt.Errorf("%T: %v", cmd, err.Error())
+	return nil
 }
