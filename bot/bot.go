@@ -44,13 +44,8 @@ func (b *Bot) Handle(ctx context.Context, team slack.OAuthV2Response, event slac
 		logger.Log(logging.Entry{Severity: logging.Debug, Payload: event})
 	}
 
-	cmderr := b.handle(ctx, client, event)
-	if err != nil {
-		logger.Log(logging.Entry{
-			Severity: logging.Error,
-			Payload:  cmderr,
-			Labels:   cmderr.labels(),
-		})
+	if cmderr := b.handle(ctx, client, event); cmderr != nil {
+		logger.Log(logging.Entry{Severity: logging.Error, Payload: cmderr, Labels: cmderr.labels()})
 	}
 }
 
