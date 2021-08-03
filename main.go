@@ -15,12 +15,15 @@ import (
 
 func init() {
 	r := marmoset.NewRouter()
+	g := &google.Client{
+		APIKey:               os.Getenv("GOOGLE_CUSTOMSEARCH_API_KEY"),
+		CustomSearchEngineID: os.Getenv("GOOGLE_CUSTOMSEARCH_ENGINE_ID"),
+	}
 	b := &bot.Bot{
 		Commands: []bot.Command{
-			commands.ImageCommand{
-				Search: &google.Client{APIKey: os.Getenv("GOOGLE_CUSTOMSEARCH_API_KEY"), CustomSearchEngineID: os.Getenv("GOOGLE_CUSTOMSEARCH_ENGINE_ID")},
-			},
+			commands.ImageCommand{Search: g},
 			commands.ForecastCommand{SourceURL: "https://www.jma.go.jp/bosai/forecast"},
+			commands.GoogleCommand{Search: g},
 		},
 		Default:  commands.AmeshCommand{Storage: &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"}},
 		NotFound: commands.NotFound{},

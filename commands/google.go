@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -13,33 +12,27 @@ import (
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/goapis/google"
 	"github.com/otiai10/largo"
-	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 )
 
-type CustomSearchClient interface {
-	CustomSearch(url.Values) (*http.Response, error)
-}
-
-// ImageCommand ...
-type ImageCommand struct {
+type GoogleCommand struct {
 	Search CustomSearchClient
 }
 
 // Match ...
-func (cmd ImageCommand) Match(event slackevents.AppMentionEvent) bool {
+func (cmd GoogleCommand) Match(event slackevents.AppMentionEvent) bool {
 	tokens := largo.Tokenize(event.Text)[1:]
 	if len(tokens) == 0 {
 		return false
 	}
-	return tokens[0] == "img" || tokens[0] == "image"
+	return tokens[0] == "ggl" || tokens[0] == "google"
 }
 
 // Handle ...
-func (cmd ImageCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd GoogleCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
 
 	safe := "active"
-	fset := largo.NewFlagSet("img", largo.ContinueOnError)
+	fset := largo.NewFlagSet("google", largo.ContinueOnError)
 	fset.Parse(largo.Tokenize(event.Text)[2:])
 	words := fset.Rest()
 
@@ -47,7 +40,6 @@ func (cmd ImageCommand) Execute(ctx context.Context, client *service.SlackClient
 	query := strings.Join(words, "+")
 	q := url.Values{}
 	q.Add("q", query)
-	q.Add("searchType", "image")
 	q.Add("num", "10")
 	q.Add("start", fmt.Sprintf("%d", 1+rand.Intn(10)))
 	q.Add("safe", safe)
@@ -76,14 +68,13 @@ func (cmd ImageCommand) Execute(ctx context.Context, client *service.SlackClient
 	index := rand.Intn(len(result.Items))
 	item := result.Items[index]
 
-	block := slack.NewImageBlock(item.Link, item.Title, "", nil)
-	msg.Blocks = append(msg.Blocks, block)
+	msg.Text = fmt.Sprintf("> %s\n%s\n", query, item.Link)
 
 	_, err = client.PostMessage(ctx, msg)
 	return err
 }
 
 // Help ...
-func (cmd ImageCommand) Help() string {
-	return "画像検索コマンド\n```@amesh img|image {query}```"
+func (cmd GoogleCommand) Help() string {
+	return "グーグル検索コマンド\n```@amesh google|ggl {query}```"
 }
