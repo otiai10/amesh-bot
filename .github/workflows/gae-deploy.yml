@@ -46,6 +46,19 @@ jobs:
         APP_SECRETS_YAML: ${{ secrets.APP_SECRETS_YAML }}
     - name: Deploy
       run: gcloud app deploy ./app.yaml --quiet
+    - name: Announce
+      run: |
+        curl -XPOST \
+          -d '{"channel":"${{ secrets.AMESH_DEV_PROJECT_CHANNEL }}", "text":"新しいバージョンがproduction環境にデプロイされました"}' \
+          -H "Authorization: Bearer ${{ secrets.AMESH_DEV_BOT_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          https://slack.com/api/chat.postMessage
+        curl -XPOST \
+          -d '{"channel":"${{ secrets.AMESH_DEV_PROJECT_CHANNEL }}", "text":"@amesh help"}' \
+          -H "Authorization: Bearer ${{ secrets.AMESH_DEV_BOT_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          https://slack.com/api/chat.postMessage
+
 
   gae-deploy-dev:
     name: GAE Deploy DEV
