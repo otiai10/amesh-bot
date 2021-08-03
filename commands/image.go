@@ -2,57 +2,46 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/otiai10/amesh-bot/slack"
+	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/goapis/google"
+	"github.com/otiai10/largo"
+	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
 )
 
+type CustomSearchClient interface {
+	CustomSearch(url.Values) (*http.Response, error)
+}
+
 // ImageCommand ...
-type ImageCommand struct{}
+type ImageCommand struct {
+	Search CustomSearchClient
+}
 
 // Match ...
-func (cmd ImageCommand) Match(payload *slack.Payload) bool {
-	if len(payload.Ext.Words) == 0 {
+func (cmd ImageCommand) Match(event slackevents.AppMentionEvent) bool {
+	tokens := largo.Tokenize(event.Text)[1:]
+	if len(tokens) == 0 {
 		return false
 	}
-	return payload.Ext.Words[0] == "img" || payload.Ext.Words[0] == "image"
+	return tokens[0] == "img" || tokens[0] == "image"
 }
 
 // Handle ...
-func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *slack.Message {
-
-	if payload.Ext.Words.Flag("-h") {
-		return cmd.Help(payload)
-	}
-
-	client := google.Client{
-		APIKey:               os.Getenv("GOOGLE_CUSTOMSEARCH_API_KEY"),
-		CustomSearchEngineID: os.Getenv("GOOGLE_CUSTOMSEARCH_ENGINE_ID"),
-		Eager:                true, // 検索結果が0の場合、条件を変えて再検索をかける
-	}
-
-	verbose := false
-	if payload.Ext.Words.Flag("-v") {
-		payload.Ext.Words = payload.Ext.Words.Remove("-v", 0)
-		verbose = true
-	}
+func (cmd ImageCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
 
 	safe := "active"
-	if payload.Ext.Words.Flag("-unsafe") {
-		payload.Ext.Words = payload.Ext.Words.Remove("-unsafe", 0)
-		safe = "off"
-	}
-
-	words := payload.Ext.Words[1:]
-	if len(words) == 0 {
-		return wrapError(payload, ErrorGoogleNoQueryGiven)
-	}
+	fset := largo.NewFlagSet("img", largo.ContinueOnError)
+	fset.Parse(largo.Tokenize(event.Text)[2:])
+	words := fset.Rest()
 
 	rand.Seed(time.Now().Unix())
 	query := strings.Join(words, "+")
@@ -63,61 +52,38 @@ func (cmd ImageCommand) Handle(ctx context.Context, payload *slack.Payload) *sla
 	q.Add("start", fmt.Sprintf("%d", 1+rand.Intn(10)))
 	q.Add("safe", safe)
 
-	res, err := client.CustomSearch(q)
+	res, err := cmd.Search.CustomSearch(q)
 	if err != nil {
-		text := strings.Join(cmd.searchMetaInfo(q, 0, 0), "\n> ")
-		return &slack.Message{Channel: payload.Event.Channel, Text: fmt.Sprintf("%v\n> %s", err, text)}
+		return err
 	}
-	if len(res.Items) == 0 {
-		text := strings.Join(cmd.searchMetaInfo(q, 0, 0), "\n> ")
-		return &slack.Message{Channel: payload.Event.Channel, Text: "Not Found\n> " + text}
-	}
+	defer res.Body.Close()
 
-	index := rand.Intn(len(res.Items))
-	item := res.Items[index]
-
-	var title *slack.Element
-	if verbose {
-		lines := append(cmd.searchMetaInfo(q, len(res.Items), index), cmd.searchResultItemInfo(&item)...)
-		title = &slack.Element{Type: "plain_text", Text: strings.Join(lines, "\n")}
+	result := new(google.CustomSearchResponse)
+	if err := json.NewDecoder(res.Body).Decode(result); err != nil {
+		return err
 	}
 
-	block := slack.Block{
-		Type:     "image",
-		ImageURL: item.Link,
-		AltText:  query,
-		Title:    title,
+	msg := service.SlackMsg{Channel: event.Channel}
+
+	if len(result.Items) == 0 {
+		q.Del("cx")
+		q.Del("key")
+		msg.Text = fmt.Sprintf("Not found for query: %v", q)
+		_, err = client.PostMessage(ctx, msg)
+		return err
 	}
 
-	return &slack.Message{Channel: payload.Event.Channel, Blocks: []slack.Block{block}}
+	index := rand.Intn(len(result.Items))
+	item := result.Items[index]
+
+	block := slack.NewImageBlock(item.Link, item.Title, "", nil)
+	msg.Blocks = append(msg.Blocks, block)
+
+	_, err = client.PostMessage(ctx, msg)
+	return err
 }
 
 // Help ...
-func (cmd ImageCommand) Help(payload *slack.Payload) *slack.Message {
-	return &slack.Message{
-		Channel: payload.Event.Channel,
-		Text:    "画像検索コマンド\n```@amesh [image|img] {検索キーワード} [-h|-v|-unsafe]```",
-	}
-}
-
-// 基本的な検索情報をテキストにするやつ
-func (cmd ImageCommand) searchMetaInfo(q url.Values, found, index int) (lines []string) {
-	return []string{
-		"query:\t" + q.Get("q"),
-		fmt.Sprintf(
-			"num: %s, start: %s, safe: %s, found: %d, random: %d",
-			q.Get("num"), q.Get("start"), q.Get("safe"), found, index,
-		),
-	}
-}
-
-// アイテムが見つかったときの結果verboseをテキストにするやつ
-func (cmd ImageCommand) searchResultItemInfo(item *google.CustomSearchItem) (lines []string) {
-	if item == nil {
-		return []string{}
-	}
-	return []string{
-		fmt.Sprintf("context:\t%s", item.Image.ContextLink),
-		fmt.Sprintf("title:\t%s", item.Title),
-	}
+func (cmd ImageCommand) Help() string {
+	return "画像検索コマンド\n```@amesh img|image {query}```"
 }

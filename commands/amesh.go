@@ -6,160 +6,175 @@ import (
 	"fmt"
 	"image/gif"
 	"image/png"
+	"io"
 	"os"
+	"strings"
 	"time"
 
-	"cloud.google.com/go/storage"
-	"github.com/otiai10/amesh-bot/slack"
+	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/amesh/lib/amesh"
+	"github.com/otiai10/largo"
+	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
+)
+
+type (
+	CloudStorage interface {
+		Exists(ctx context.Context, bucket string, name string) (exists bool, err error)
+		Upload(ctx context.Context, bucket string, name string, contents []byte) error
+		URL(bucket string, name string) string
+	}
 )
 
 // AmeshCommand ...
-type AmeshCommand struct{}
-
-// Match ...
-func (cmd AmeshCommand) Match(payload *slack.Payload) bool {
-	if len(payload.Ext.Words) == 0 {
-		return true
-	}
-	// TODO: これ、他のコマンドが "-a" を持ってたら、こっちがハイジャックしちゃうでしょ
-	if payload.Ext.Words.Flag("-a") {
-		return true
-	}
-	return false
+type AmeshCommand struct {
+	Storage CloudStorage
 }
 
-// Handle ...
-func (cmd AmeshCommand) Handle(ctx context.Context, payload *slack.Payload) *slack.Message {
+func (cmd AmeshCommand) newFlagSet(animated bool, help io.Writer) *largo.FlagSet {
+	fset := largo.NewFlagSet("", largo.ContinueOnError)
+	fset.Output = help
+	fset.BoolVar(&animated, "animated", false, "GIF画像でタイムラプス表示").Alias("a")
+	return fset
+}
+
+// Match ...
+func (cmd AmeshCommand) Match(event slackevents.AppMentionEvent) bool {
+	fset := cmd.newFlagSet(false, Discard)
+	fset.Parse(largo.Tokenize(event.Text)[1:])
+	return len(fset.Rest()) == 0
+}
+
+func (cmd AmeshCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
+
+	var animated bool
+	help := bytes.NewBuffer(nil)
+	fset := cmd.newFlagSet(animated, help)
+
+	tokens := strings.Fields(event.Text)[1:]
+	if err := fset.Parse(tokens); err != nil {
+		return fmt.Errorf("failed to parse arguments: %v", err)
+	}
+
+	msg := service.SlackMsg{Channel: event.Channel}
 
 	tokyo, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		return wrapError(payload, err)
+		return fmt.Errorf("failed to load location: %v", err)
 	}
 	now := time.Now().In(tokyo)
 
-	if payload.Ext.Words.Flag("-a") {
-		return cmd.ameshAnimated(ctx, payload, now)
+	switch {
+	case fset.HelpRequested():
+		msg.Text = fmt.Sprintf("デフォルトのアメッシュコマンド\n```@amesh [-a] [-h]\n%v```", help.String())
+	case animated:
+		block, err := cmd.ameshAnimated(ctx, now)
+		if err != nil {
+			return err
+		}
+		msg.Blocks = append(msg.Blocks, block)
+	default:
+		block, err := cmd.ameshNow(ctx, now)
+		if err != nil {
+			return err
+		}
+		msg.Blocks = append(msg.Blocks, block)
 	}
+	_, err = client.PostMessage(ctx, msg)
+	return err
 
-	return cmd.ameshNow(ctx, payload, now)
 }
 
-func (cmd AmeshCommand) ameshNow(ctx context.Context, payload *slack.Payload, now time.Time) *slack.Message {
+func (cmd AmeshCommand) ameshNow(ctx context.Context, now time.Time) (block slack.Block, err error) {
+
 	entry := amesh.GetEntry(now)
 
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return wrapError(payload, err)
-	}
-	defer client.Close()
-
 	bname := os.Getenv("GOOGLE_STORAGE_BUCKET_NAME")
-	bucket := client.Bucket(bname)
 	datetime := entry.Time.Format("2006-0102-1504")
 	fname := fmt.Sprintf("%s.png", datetime)
-	furl := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bname, fname)
-	obj := bucket.Object(fname)
+	furl := cmd.Storage.URL(bname, fname)
 
-	attrs, err := obj.Attrs(ctx)
-	if err != nil && err != storage.ErrObjectNotExist {
-		return wrapError(payload, err)
-	}
-
-	// すでにあるのでURLだけ返す
-	if attrs != nil && attrs.Size > 0 {
-		return &slack.Message{
-			Channel: payload.Event.Channel,
-			Blocks:  []slack.Block{{Type: "image", ImageURL: furl, AltText: datetime}},
-		}
-	}
-
-	// 画像の取得と合成
-	img, err := entry.GetImage(true, true)
+	exists, err := cmd.Storage.Exists(ctx, bname, fname)
 	if err != nil {
-		return wrapError(payload, err)
+		return nil, err
 	}
-	buf := bytes.NewBuffer(nil)
-	if err := png.Encode(buf, img); err != nil {
-		return wrapError(payload, err)
-	}
-
-	// GoogleStorageへのアップロード
-	writer := obj.NewWriter(ctx)
-	if _, err = writer.Write(buf.Bytes()); err != nil {
-		return wrapError(payload, err)
-	}
-	if err = writer.Close(); err != nil {
-		return wrapError(payload, err)
+	if exists {
+		return slack.NewImageBlock(furl, datetime, "", nil), nil
 	}
 
-	return &slack.Message{
-		Channel: payload.Event.Channel,
-		Blocks:  []slack.Block{{Type: "image", ImageURL: furl, AltText: datetime}},
+	if _, err = entry.GetImage(true, true); err != nil {
+		return nil, fmt.Errorf("failed to get image of amesh: %v", err)
 	}
 
+	if err := cmd.uploadEntryToStorage(ctx, entry, bname); err != nil {
+		return nil, err
+	}
+
+	return slack.NewImageBlock(furl, datetime, "", nil), nil
 }
 
-func (cmd AmeshCommand) ameshAnimated(ctx context.Context, payload *slack.Payload, now time.Time) *slack.Message {
+func (cmd AmeshCommand) ameshAnimated(ctx context.Context, now time.Time) (block slack.Block, err error) {
+
 	entries := amesh.GetEntries(now.Add(-40*time.Minute), now)
 
-	// {{{ TODO: GCSへのアップロード部分をDRYにするべき
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return wrapError(payload, err)
-	}
-	defer client.Close()
-
 	bname := os.Getenv("GOOGLE_STORAGE_BUCKET_NAME")
-	bucket := client.Bucket(bname)
 	datetime := entries[0].Time.Format("2006-0102-1504")
 	fname := fmt.Sprintf("%s.gif", datetime)
-	furl := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bname, fname)
-	obj := bucket.Object(fname)
+	furl := cmd.Storage.URL(bname, fname)
 
-	attrs, err := obj.Attrs(ctx)
-	if err != nil && err != storage.ErrObjectNotExist {
-		return wrapError(payload, err)
+	exists, err := cmd.Storage.Exists(ctx, bname, fname)
+	if err != nil {
+		return nil, err
 	}
-
-	// すでにあるのでURLだけ返す
-	if attrs != nil && attrs.Size > 0 {
-		return &slack.Message{
-			Channel: payload.Event.Channel,
-			Blocks:  []slack.Block{{Type: "image", ImageURL: furl, AltText: datetime}},
-		}
+	if exists {
+		return slack.NewImageBlock(furl, datetime, "", nil), nil
 	}
-	// }}}
 
 	g, err := entries.ToGif(500, true)
 	if err != nil {
-		return wrapError(payload, err)
+		return nil, err
 	}
+
 	buf := bytes.NewBuffer(nil)
 	if err := gif.EncodeAll(buf, g); err != nil {
-		return wrapError(payload, err)
+		return nil, err
 	}
 
-	// GoogleStorageへのアップロード
-	writer := obj.NewWriter(ctx)
-	if _, err = writer.Write(buf.Bytes()); err != nil {
-		return wrapError(payload, err)
-	}
-	if err = writer.Close(); err != nil {
-		return wrapError(payload, err)
+	if err := cmd.Storage.Upload(ctx, bname, fname, buf.Bytes()); err != nil {
+		return nil, err
 	}
 
-	return &slack.Message{
-		Channel: payload.Event.Channel,
-		Blocks:  []slack.Block{{Type: "image", ImageURL: furl, AltText: datetime}},
-	}
+	go cmd.uploadEntriesToStorage(context.Background(), entries, bname)
 
+	return slack.NewImageBlock(furl, datetime, "", nil), nil
 }
 
-// Help ...
-func (cmd AmeshCommand) Help(payload *slack.Payload) *slack.Message {
-	return &slack.Message{
-		Channel: payload.Event.Channel,
-		Text:    "デフォルトのアメッシュコマンド\n```@amesh [-a]```",
+func (cmd AmeshCommand) uploadEntriesToStorage(ctx context.Context, entries amesh.Entries, bucket string) error {
+	for _, entry := range entries {
+		if err := cmd.uploadEntryToStorage(ctx, entry, bucket); err != nil {
+			fmt.Printf("[ERROR] %v.uploadEntriesToStorage: %v\n", cmd, err)
+			return err
+		}
 	}
+	return nil
+}
+
+func (cmd AmeshCommand) uploadEntryToStorage(ctx context.Context, entry *amesh.Entry, bucket string) error {
+	if entry.Image == nil {
+		return fmt.Errorf("image for the entry:%v is nil, use GetImage first", entry.Time)
+	}
+	buf := bytes.NewBuffer(nil)
+	if err := png.Encode(buf, entry.Image); err != nil {
+		return err
+	}
+	efname := fmt.Sprintf("%s.png", entry.Time.Format("2006-0102-1504"))
+	if err := cmd.Storage.Upload(ctx, bucket, efname, buf.Bytes()); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Help ヘルプ一覧に表示されるもの
+func (cmd AmeshCommand) Help() string {
+	return "アメッシュ表示コマンド\n```@amesh [-a] [-h]```"
 }
