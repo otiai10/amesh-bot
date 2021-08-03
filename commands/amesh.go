@@ -31,25 +31,29 @@ type AmeshCommand struct {
 	Storage CloudStorage
 }
 
-func (cmd AmeshCommand) newFlagSet(animated bool, help io.Writer) *largo.FlagSet {
+func (cmd AmeshCommand) newFlagSet(animated *bool, help io.Writer) *largo.FlagSet {
+	if animated == nil {
+		a := false
+		animated = &a
+	}
 	fset := largo.NewFlagSet("", largo.ContinueOnError)
 	fset.Output = help
-	fset.BoolVar(&animated, "animated", false, "GIF画像でタイムラプス表示").Alias("a")
+	fset.BoolVar(animated, "animated", false, "GIF画像でタイムラプス表示").Alias("a")
 	return fset
 }
 
 // Match ...
 func (cmd AmeshCommand) Match(event slackevents.AppMentionEvent) bool {
-	fset := cmd.newFlagSet(false, Discard)
+	fset := cmd.newFlagSet(nil, Discard)
 	fset.Parse(largo.Tokenize(event.Text)[1:])
 	return len(fset.Rest()) == 0
 }
 
-func (cmd AmeshCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd AmeshCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
 
 	var animated bool
 	help := bytes.NewBuffer(nil)
-	fset := cmd.newFlagSet(animated, help)
+	fset := cmd.newFlagSet(&animated, help)
 
 	tokens := strings.Fields(event.Text)[1:]
 	if err := fset.Parse(tokens); err != nil {

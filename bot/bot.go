@@ -13,7 +13,7 @@ import (
 type (
 	Command interface {
 		Match(event slackevents.AppMentionEvent) bool
-		Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) error
+		Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error
 		Help() string
 	}
 )

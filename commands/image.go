@@ -36,7 +36,7 @@ func (cmd ImageCommand) Match(event slackevents.AppMentionEvent) bool {
 }
 
 // Handle ...
-func (cmd ImageCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
 
 	safe := "active"
 	fset := largo.NewFlagSet("img", largo.ContinueOnError)

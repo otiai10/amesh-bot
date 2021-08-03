@@ -29,7 +29,7 @@ func (cmd GoogleCommand) Match(event slackevents.AppMentionEvent) bool {
 }
 
 // Handle ...
-func (cmd GoogleCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd GoogleCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
 
 	safe := "active"
 	fset := largo.NewFlagSet("google", largo.ContinueOnError)
