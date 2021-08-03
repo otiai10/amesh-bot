@@ -81,12 +81,13 @@ func (cmd ForecastCommand) Execute(ctx context.Context, client *service.SlackCli
 		_, err := client.PostMessage(ctx, msg)
 		return err
 	}
-	overview, err := jmaclient.Overview(areas[0].Code)
-	if err != nil {
-		msg.Text = err.Error()
-		_, err := client.PostMessage(ctx, msg)
-		return err
-	}
+	overview, _ := jmaclient.Overview(areas[0].Code)
+	// Overviewは無くていいので、エラーは無視する.
+	// if err != nil {
+	// 	msg.Text = err.Error()
+	// 	_, err := client.PostMessage(ctx, msg)
+	// 	return err
+	// }
 
 	blocks := cmd.FormatForecastToSlackBlocks(entries, overview)
 	msg.Blocks = blocks
@@ -143,10 +144,12 @@ func (cmd ForecastCommand) FormatForecastToSlackBlocks(entries []api.Comprehensi
 	}
 
 	// 広域のOverviewをヘッドラインとして表示
-	chunks := ja.Cut(overview.Text, true)
-	text := "> " + chunks[0] + "\n" + "> " + strings.Join(chunks[1:], "")
-	headline := slack.NewTextBlockObject(slack.MarkdownType, text, false, false)
-	blocks = append(blocks, slack.NewContextBlock("", headline))
+	if overview != nil {
+		chunks := ja.Cut(overview.Text, true)
+		text := "> " + chunks[0] + "\n" + "> " + strings.Join(chunks[1:], "")
+		headline := slack.NewTextBlockObject(slack.MarkdownType, text, false, false)
+		blocks = append(blocks, slack.NewContextBlock("", headline))
+	}
 
 	return blocks
 }
