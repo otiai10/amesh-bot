@@ -19,6 +19,10 @@ type (
 	}
 	SlackOAuthClient struct{}
 
+	ISlackClient interface {
+		PostMessage(ctx context.Context, msg interface{}) (*slack.SlackResponse, error)
+	}
+
 	SlackMsg struct {
 		Channel string        `json:"channel"`
 		Text    string        `json:"text,omitempty"`

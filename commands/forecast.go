@@ -32,7 +32,7 @@ func (cmd ForecastCommand) Match(event slackevents.AppMentionEvent) bool {
 	return false
 }
 
-func (cmd ForecastCommand) Execute(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) error {
+func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error {
 	city := "tokyo"
 	list := false
 	help := bytes.NewBuffer(nil)
