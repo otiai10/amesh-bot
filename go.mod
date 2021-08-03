@@ -12,5 +12,6 @@ require (
 	github.com/otiai10/jma v0.0.0-20210802024505-9b53b5ed5ed6
 	github.com/otiai10/largo v0.0.0-20210801013600-969af219545d
 	github.com/otiai10/marmoset v0.4.0
+	github.com/otiai10/mint v1.3.2
 	github.com/slack-go/slack v0.9.3
 )
