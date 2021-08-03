@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/slack-go/slack"
+	"github.com/otiai10/amesh-bot/service"
 	"github.com/slack-go/slack/slackevents"
 )
 
@@ -15,7 +15,7 @@ type (
 		Event slackevents.AppMentionEvent
 	}
 	Bot interface {
-		Handle(ctx context.Context, team slack.OAuthV2Response, event slackevents.AppMentionEvent)
+		Handle(ctx context.Context, team service.OAuthResponse, event slackevents.AppMentionEvent)
 	}
 	Slack interface {
 		ExchangeOAuthCodeWithAccessToken(ctx context.Context, code string) (*http.Response, error)

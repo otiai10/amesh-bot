@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/marmoset"
-	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 )
 
@@ -41,7 +41,7 @@ func (c *Controller) Webhook(w http.ResponseWriter, req *http.Request) {
 	render.JSON(http.StatusAccepted, marmoset.P{"message": "ok"})
 
 	// Fetch oauth information and recover Slack client
-	team := slack.OAuthV2Response{}
+	team := service.OAuthResponse{}
 	key := fmt.Sprintf("Teams/%s", payload.TeamID)
 	if err := c.Datastore.Get(req.Context(), key, &team); err != nil {
 		// TODO: Fix

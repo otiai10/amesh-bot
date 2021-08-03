@@ -7,7 +7,6 @@ import (
 	"cloud.google.com/go/logging"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/largo"
-	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 )
 
@@ -30,7 +29,7 @@ type (
 	}
 )
 
-func (b *Bot) Handle(ctx context.Context, team slack.OAuthV2Response, event slackevents.AppMentionEvent) {
+func (b *Bot) Handle(ctx context.Context, team service.OAuthResponse, event slackevents.AppMentionEvent) {
 	client := service.NewSlackClient(team.AccessToken)
 
 	lg, err := logging.NewClient(ctx, os.Getenv("GOOGLE_PROJECT_ID"))

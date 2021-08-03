@@ -24,6 +24,25 @@ type (
 		Text    string        `json:"text,omitempty"`
 		Blocks  []slack.Block `json:"blocks,omitempty"`
 	}
+
+	// OAuthResponse ...
+	// https://api.slack.com/methods/oauth.v2.access#response
+	OAuthResponse struct {
+		OK         bool   `json:"ok"     firestore:"ok"`
+		AppID      string `json:"app_id" firestore:"app_id"`
+		AuthedUser struct {
+			ID string `json:"id" firestore:"id"`
+		} `json:"authed_user" firestore:"authed_user"`
+		Scope       string `json:"scope"        firestore:"scope"`
+		TokenType   string `json:"token_type"   firestore:"token_type"`
+		AccessToken string `json:"access_token" firestore:"access_token"`
+		BotUserID   string `json:"bot_user_id"  firestore:"bot_user_id"`
+		Team        struct {
+			ID   string `json:"id"   firestore:"id"`
+			Name string `json:"name" firestore:"name"`
+		} `json:"team" firestore:"team"`
+		Enterprise interface{} `json:"enterprise" firestore:"-"`
+	}
 )
 
 func NewSlackClient(accessToken string) *SlackClient {

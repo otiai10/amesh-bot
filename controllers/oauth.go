@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/slack-go/slack"
+	"github.com/otiai10/amesh-bot/service"
 )
 
 var (
@@ -57,7 +57,7 @@ func (c *Controller) OAuth(w http.ResponseWriter, req *http.Request) {
 	}
 	defer res.Body.Close()
 
-	oauth := slack.OAuthV2Response{}
+	oauth := service.OAuthResponse{}
 	if err := json.NewDecoder(res.Body).Decode(&oauth); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

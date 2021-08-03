@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"reflect"
-	"strings"
 
 	"cloud.google.com/go/firestore"
 )
@@ -43,15 +41,6 @@ func (d *Datastore) Get(ctx context.Context, path string, dest interface{}) erro
 	if err := doc.DataTo(dest); err != nil {
 		return err
 	}
-
-	// {{{ FIXME: AccessToken or any other camel fields are not filled correctly.
-	if strings.HasPrefix(path, "Teams/") {
-		dict := doc.Data()
-		reflect.ValueOf(dest).Elem().
-			FieldByName("AccessToken").
-			Set(reflect.ValueOf(dict["access_token"]))
-	}
-	// }}}
 
 	return nil
 }
