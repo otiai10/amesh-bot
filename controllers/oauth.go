@@ -39,14 +39,14 @@ func (c *Controller) OAuth(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if res.StatusCode >= 400 {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(res.StatusCode)
 		return
 	}
 	defer res.Body.Close()
 
 	oauth := service.OAuthResponse{}
 	if err := json.NewDecoder(res.Body).Decode(&oauth); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
