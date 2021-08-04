@@ -33,19 +33,6 @@ func (c *Controller) OAuth(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// params := url.Values{
-	// 	"code":          {code},
-	// 	"client_id":     {os.Getenv("SLACK_APP_CLIENT_ID")},
-	// 	"client_secret": {os.Getenv("SLACK_APP_CLIENT_SECRET")},
-	// }
-	// req, err := http.NewRequest("POST", "https://slack.com/api/oauth.v2.access", strings.NewReader(params.Encode()))
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-	// req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// res, err := http.DefaultClient.Do(req)
-
 	res, err := c.Slack.ExchangeOAuthCodeWithAccessToken(req.Context(), code)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
