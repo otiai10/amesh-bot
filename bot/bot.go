@@ -58,7 +58,7 @@ func (b *Bot) handle(ctx context.Context, client *service.SlackClient, event sla
 			return errwrap(err, cmd, event)
 		}
 	}
-	if b.Default.Match(event) {
+	if b.Default != nil && b.Default.Match(event) {
 		err := b.Default.Execute(ctx, client, event)
 		return errwrap(err, b.Default, event)
 	}
