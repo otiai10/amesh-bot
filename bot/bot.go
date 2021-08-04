@@ -16,6 +16,9 @@ type (
 		Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error
 		Help() string
 	}
+	Log interface {
+		Logger(name string, opts ...logging.LoggerOption) *logging.Logger
+	}
 )
 
 type (
@@ -26,19 +29,15 @@ type (
 		Default Command
 		// 不明なコマンドを受け取った場合の挙動
 		NotFound Command
+
+		Log Log
 	}
 )
 
 func (b *Bot) Handle(ctx context.Context, team service.OAuthResponse, event slackevents.AppMentionEvent) {
 	client := service.NewSlackClient(team.AccessToken)
 
-	lg, err := logging.NewClient(ctx, os.Getenv("GOOGLE_PROJECT_ID"))
-	if err != nil {
-		panic(err)
-	}
-	defer lg.Close()
-
-	logger := lg.Logger("bot")
+	logger := b.Log.Logger("bot")
 	if os.Getenv("DEV_SLACK_APP_ID") != "" {
 		logger.Log(logging.Entry{Severity: logging.Debug, Payload: event})
 	}
@@ -48,7 +47,7 @@ func (b *Bot) Handle(ctx context.Context, team service.OAuthResponse, event slac
 	}
 }
 
-func (b *Bot) handle(ctx context.Context, client *service.SlackClient, event slackevents.AppMentionEvent) *CommandError {
+func (b *Bot) handle(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *CommandError {
 	if tokens := largo.Tokenize(event.Text)[1:]; len(tokens) != 0 && tokens[0] == "help" {
 		return errwrap(b.Help(ctx, client, event), "builtin:help", event)
 	}

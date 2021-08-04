@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 
+	"cloud.google.com/go/logging"
 	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/commands"
 	"github.com/otiai10/amesh-bot/controllers"
@@ -13,12 +15,20 @@ import (
 	"github.com/otiai10/marmoset"
 )
 
-func init() {
+func main() {
+
 	r := marmoset.NewRouter()
 	g := &google.Client{
 		APIKey:               os.Getenv("GOOGLE_CUSTOMSEARCH_API_KEY"),
 		CustomSearchEngineID: os.Getenv("GOOGLE_CUSTOMSEARCH_ENGINE_ID"),
 	}
+
+	lg, err := logging.NewClient(context.Background(), os.Getenv("GOOGLE_PROJECT_ID"))
+	if err != nil {
+		panic(err)
+	}
+	defer lg.Close()
+
 	b := &bot.Bot{
 		Commands: []bot.Command{
 			commands.ImageCommand{Search: g},
@@ -27,6 +37,7 @@ func init() {
 		},
 		Default:  commands.AmeshCommand{Storage: &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"}},
 		NotFound: commands.NotFound{},
+		Log:      lg,
 	}
 	c := controllers.Controller{
 		Bot:       b,
@@ -36,9 +47,7 @@ func init() {
 	r.POST("/slack/webhook", c.Webhook)
 	r.GET("/slack/oauth", c.OAuth)
 	http.Handle("/", r)
-}
 
-func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
