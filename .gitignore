@@ -4,3 +4,6 @@ app-secrets.*.yaml
 !app-secrets.example.yaml
 amesh-bot-*.json
 coverage
+
+# dev
+.vscode
