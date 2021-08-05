@@ -76,5 +76,5 @@ func (cmd GoogleCommand) Execute(ctx context.Context, client service.ISlackClien
 
 // Help ...
 func (cmd GoogleCommand) Help() string {
-	return "グーグル検索コマンド\n```@amesh google|ggl {query}```"
+	return "グーグル検索コマンド\n```@amesh ggl|google {query}```"
 }
