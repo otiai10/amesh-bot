@@ -3,11 +3,15 @@ package commands
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 
 	"github.com/otiai10/amesh-bot/service"
+	"github.com/otiai10/mint"
 	"github.com/slack-go/slack"
 )
 
+// CloudStorage
 type mockStorage struct{}
 
 func (mocks *mockStorage) Exists(ctx context.Context, bucket, name string) (bool, error) {
@@ -23,6 +27,7 @@ func (mocks *mockStorage) Upload(ctx context.Context, bucket, name string, conte
 	return nil
 }
 
+// ISlackClient
 type mockSlackClient struct {
 	messages []service.SlackMsg
 }
@@ -30,4 +35,17 @@ type mockSlackClient struct {
 func (sc *mockSlackClient) PostMessage(ctx context.Context, msg interface{}) (*slack.SlackResponse, error) {
 	sc.messages = append(sc.messages, msg.(service.SlackMsg))
 	return nil, nil
+}
+
+// Google
+type mockGoogleClient struct {
+	mint.HTTPClientMock
+}
+
+func (gc *mockGoogleClient) CustomSearch(url.Values) (*http.Response, error) {
+	res, err, ok := gc.Handle()
+	if ok {
+		return res, err
+	}
+	return nil, fmt.Errorf("invalid mocking")
 }
