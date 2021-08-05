@@ -43,6 +43,7 @@ func TestImageCommand_Execute(t *testing.T) {
 	Expect(t, msg.Blocks[0].(*slack.ImageBlock).ImageURL).ToBe("qwerty")
 
 	When(t, "no item found", func(t *testing.T) {
+		sc := &mockSlackClient{}
 		search.ResponseBody = `{
 			"items": []
 		}`
