@@ -49,3 +49,16 @@ func (gc *mockGoogleClient) CustomSearch(url.Values) (*http.Response, error) {
 	}
 	return nil, fmt.Errorf("invalid mocking")
 }
+
+// LGTM
+type mockLGTM struct {
+	imgurl string
+	err    error
+}
+
+func (ml *mockLGTM) Random() (string, error) {
+	if ml.err != nil {
+		return "", ml.err
+	}
+	return ml.imgurl, nil
+}

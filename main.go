@@ -34,6 +34,7 @@ func main() {
 			commands.ImageCommand{Search: g},
 			commands.ForecastCommand{SourceURL: "https://www.jma.go.jp/bosai/forecast"},
 			commands.GoogleCommand{Search: g},
+			commands.LGTMCommand{Service: service.LGTM{}},
 		},
 		Default:  commands.AmeshCommand{Storage: &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"}},
 		NotFound: commands.NotFound{},
