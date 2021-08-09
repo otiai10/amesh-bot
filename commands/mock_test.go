@@ -36,6 +36,14 @@ func (sc *mockSlackClient) PostMessage(ctx context.Context, msg interface{}) (*s
 	return nil, nil
 }
 
+// func (sc *mockSlackClient) DeleteMessage(ctx context.Context, msg interface{}) error {
+// 	return nil
+// }
+
+func (sc *mockSlackClient) UpdateMessage(ctx context.Context, msg interface{}) error {
+	return nil
+}
+
 // Google
 type mockGoogleClient struct {
 	mint.HTTPClientMock

@@ -132,7 +132,19 @@ func (cmd AmeshCommand) animated(
 		return err
 	}
 
+	var placeholder *service.PostMessageResponse = nil
 	if !exists {
+		msg := service.SlackMsg{
+			Channel: event.Channel,
+			Blocks: []slack.Block{
+				slack.NewContextBlock("", slack.NewTextBlockObject(slack.MarkdownType, "タイムラプス画像を生成しています... :robot_face:", false, false)),
+			},
+		}
+		if placeholder, err = client.PostMessage(ctx, msg); err != nil {
+			// TODO: こういうのがあるので、returnじゃなくてchanでログを管理するべき
+			fmt.Println("[ERROR] @amesh -a (placeholder)", err.Error())
+		}
+
 		g, err := entries.ToGif(500, true)
 		if err != nil {
 			return err
@@ -146,13 +158,21 @@ func (cmd AmeshCommand) animated(
 		if err := cmd.Storage.Upload(ctx, bname, fname, buf.Bytes()); err != nil {
 			return err
 		}
-	}
 
-	go cmd.uploadEntriesToStorage(context.Background(), entries, bname)
+		// TODO: こういうのがあるので、returnじゃなくてchanでログを管理するべき
+		go cmd.uploadEntriesToStorage(context.Background(), entries, bname)
+	}
 
 	msg := service.SlackMsg{Channel: event.Channel}
 	msg.Blocks = append(msg.Blocks, slack.NewImageBlock(furl, datetime, "", nil))
-	_, err = client.PostMessage(ctx, msg)
+
+	if placeholder != nil {
+		msg.Timestamp = placeholder.Timestamp
+		err = client.UpdateMessage(ctx, msg)
+	} else {
+		_, err = client.PostMessage(ctx, msg)
+	}
+
 	return err
 }
 

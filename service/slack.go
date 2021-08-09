@@ -21,12 +21,15 @@ type (
 
 	ISlackClient interface {
 		PostMessage(ctx context.Context, msg interface{}) (*PostMessageResponse, error)
+		// DeleteMessage(ctx context.Context, msg interface{}) error
+		UpdateMessage(ctx context.Context, msg interface{}) error
 	}
 
 	SlackMsg struct {
-		Channel string        `json:"channel"`
-		Text    string        `json:"text,omitempty"`
-		Blocks  []slack.Block `json:"blocks,omitempty"`
+		Channel   string        `json:"channel"`
+		Text      string        `json:"text,omitempty"`
+		Blocks    []slack.Block `json:"blocks,omitempty"`
+		Timestamp string        `json:"ts,omitempty"`
 	}
 
 	// OAuthResponse ...
@@ -93,6 +96,81 @@ func (c *SlackClient) PostMessage(ctx context.Context, msg interface{}) (*PostMe
 		return response, fmt.Errorf(response.Error)
 	}
 	return response, nil
+}
+
+// https://api.slack.com/methods/chat.delete
+func (c *SlackClient) DeleteMessage(ctx context.Context, msg interface{}) error {
+
+	body := bytes.NewBuffer(nil)
+	if err := json.NewEncoder(body).Encode(msg); err != nil {
+		return err
+	}
+
+	// https://api.slack.com/methods/chat.delete
+	req, err := http.NewRequest("POST", "https://slack.com/api/chat.delete", body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		return fmt.Errorf(res.Status)
+	}
+
+	response := &slack.SlackResponse{}
+	if err := json.NewDecoder(res.Body).Decode(response); err != nil {
+		return err
+	}
+	if !response.Ok {
+		// TODO: Improve
+		return fmt.Errorf(response.Error)
+	}
+	return nil
+
+}
+
+func (c *SlackClient) UpdateMessage(ctx context.Context, msg interface{}) error {
+
+	body := bytes.NewBuffer(nil)
+	if err := json.NewEncoder(body).Encode(msg); err != nil {
+		return err
+	}
+
+	// https://api.slack.com/methods/chat.update
+	req, err := http.NewRequest("POST", "https://slack.com/api/chat.update", body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		return fmt.Errorf(res.Status)
+	}
+
+	response := &slack.SlackResponse{}
+	if err := json.NewDecoder(res.Body).Decode(response); err != nil {
+		return err
+	}
+	if !response.Ok {
+		// TODO: Improve
+		return fmt.Errorf(response.Error)
+	}
+	return nil
+
 }
 
 func (o *SlackOAuthClient) ExchangeOAuthCodeWithAccessToken(ctx context.Context, code string) (*http.Response, error) {

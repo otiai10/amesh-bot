@@ -23,9 +23,10 @@ func TestAmeshCommand_Execute(t *testing.T) {
 	scl := &mockSlackClient{}
 	err := cmd.Execute(ctx, scl, slackevents.AppMentionEvent{Text: "@amesh -a"})
 	Expect(t, err).ToBe(nil)
-	Expect(t, len(scl.messages)).ToBe(1)
+	Expect(t, len(scl.messages)).ToBe(2)
 	msg := scl.messages[0]
-	Expect(t, msg.Blocks[0].BlockType()).ToBe(slack.MBTImage)
+	Expect(t, msg.Blocks[0].BlockType()).ToBe(slack.MBTContext)
+	Expect(t, msg.Blocks[1].BlockType()).ToBe(slack.MBTImage)
 	blck := msg.Blocks[0].(*slack.ImageBlock)
 	Expect(t, blck.ImageURL).Match(".gif")
 

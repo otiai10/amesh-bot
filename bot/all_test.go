@@ -22,6 +22,14 @@ func (ms *mockSlack) PostMessage(ctx context.Context, msg interface{}) (*service
 	return nil, nil
 }
 
+// func (ms *mockSlack) DeleteMessage(ctx context.Context, msg interface{}) error {
+// 	return nil
+// }
+
+func (ms *mockSlack) UpdateMessage(ctx context.Context, msg interface{}) error {
+	return nil
+}
+
 func TestBot_Handle(t *testing.T) {
 	bot := Bot{Log: &mockLog{}}
 	ctx := context.Background()
