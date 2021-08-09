@@ -7,7 +7,6 @@ import (
 	"cloud.google.com/go/logging"
 	"github.com/otiai10/amesh-bot/service"
 	m "github.com/otiai10/mint"
-	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 )
 
@@ -19,7 +18,7 @@ func (ml *mockLog) Logger(name string, opt ...logging.LoggerOption) *logging.Log
 
 type mockSlack struct{}
 
-func (ms *mockSlack) PostMessage(ctx context.Context, msg interface{}) (*slack.SlackResponse, error) {
+func (ms *mockSlack) PostMessage(ctx context.Context, msg interface{}) (*service.PostMessageResponse, error) {
 	return nil, nil
 }
 

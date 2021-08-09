@@ -20,7 +20,7 @@ type (
 	SlackOAuthClient struct{}
 
 	ISlackClient interface {
-		PostMessage(ctx context.Context, msg interface{}) (*slack.SlackResponse, error)
+		PostMessage(ctx context.Context, msg interface{}) (*PostMessageResponse, error)
 	}
 
 	SlackMsg struct {
@@ -47,6 +47,11 @@ type (
 		} `json:"team" firestore:"team"`
 		Enterprise interface{} `json:"enterprise" firestore:"-"`
 	}
+
+	PostMessageResponse struct {
+		slack.SlackResponse
+		slack.Msg
+	}
 )
 
 func NewSlackClient(accessToken string) *SlackClient {
@@ -55,7 +60,7 @@ func NewSlackClient(accessToken string) *SlackClient {
 	}
 }
 
-func (c *SlackClient) PostMessage(ctx context.Context, msg interface{}) (*slack.SlackResponse, error) {
+func (c *SlackClient) PostMessage(ctx context.Context, msg interface{}) (*PostMessageResponse, error) {
 	body := bytes.NewBuffer(nil)
 	if err := json.NewEncoder(body).Encode(msg); err != nil {
 		return nil, err
@@ -79,7 +84,7 @@ func (c *SlackClient) PostMessage(ctx context.Context, msg interface{}) (*slack.
 		return nil, fmt.Errorf(res.Status)
 	}
 
-	response := &slack.SlackResponse{}
+	response := &PostMessageResponse{}
 	if err := json.NewDecoder(res.Body).Decode(response); err != nil {
 		return nil, err
 	}
