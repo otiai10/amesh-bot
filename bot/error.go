@@ -3,9 +3,9 @@ package bot
 import "fmt"
 
 type CommandError struct {
-	Err     string      // `json:"err"`
-	CmdName string      // `json:"cmd_name"`
-	Cmd     interface{} // `json:"cmd"`
+	Err     string // `json:"err"`
+	CmdName string // `json:"cmd_name"`
+	// Cmd     interface{} // `json:"cmd"`
 	Event   interface{} // `json:"event"`
 	Message interface{} // `json:"message,omitempty"`
 }
@@ -16,9 +16,9 @@ func errwrap(err error, cmd interface{}, event interface{}) *CommandError {
 	}
 	switch v := cmd.(type) {
 	case string:
-		return &CommandError{Err: err.Error(), CmdName: v, Cmd: cmd, Event: event}
+		return &CommandError{Err: err.Error(), CmdName: v, Event: event}
 	default:
-		return &CommandError{Err: err.Error(), CmdName: fmt.Sprintf("%T", cmd), Cmd: cmd, Event: event}
+		return &CommandError{Err: err.Error(), CmdName: fmt.Sprintf("%T", cmd), Event: event}
 	}
 }
 
