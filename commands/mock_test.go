@@ -8,7 +8,6 @@ import (
 
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/mint"
-	"github.com/slack-go/slack"
 )
 
 // CloudStorage
@@ -32,9 +31,17 @@ type mockSlackClient struct {
 	messages []service.SlackMsg
 }
 
-func (sc *mockSlackClient) PostMessage(ctx context.Context, msg interface{}) (*slack.SlackResponse, error) {
+func (sc *mockSlackClient) PostMessage(ctx context.Context, msg interface{}) (*service.PostMessageResponse, error) {
 	sc.messages = append(sc.messages, msg.(service.SlackMsg))
 	return nil, nil
+}
+
+// func (sc *mockSlackClient) DeleteMessage(ctx context.Context, msg interface{}) error {
+// 	return nil
+// }
+
+func (sc *mockSlackClient) UpdateMessage(ctx context.Context, msg interface{}) error {
+	return nil
 }
 
 // Google

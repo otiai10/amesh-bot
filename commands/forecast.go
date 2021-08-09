@@ -3,9 +3,7 @@ package commands
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/otiai10/amesh-bot/service"
@@ -92,7 +90,7 @@ func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackCli
 	blocks := cmd.FormatForecastToSlackBlocks(entries, overview)
 	msg.Blocks = blocks
 
-	json.NewEncoder(os.Stderr).Encode(msg)
+	// json.NewEncoder(os.Stderr).Encode(msg)
 
 	_, err = client.PostMessage(ctx, msg)
 	if err != nil {
