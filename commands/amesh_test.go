@@ -20,19 +20,30 @@ func TestAmeshCommand_Execute(t *testing.T) {
 	ctx := context.Background()
 	str := &mockStorage{}
 	cmd := AmeshCommand{Storage: str}
+	ev := slackevents.AppMentionEvent{}
 	scl := &mockSlackClient{}
-	err := cmd.Execute(ctx, scl, slackevents.AppMentionEvent{Text: "@amesh -a"})
-	Expect(t, err).ToBe(nil)
-	Expect(t, len(scl.messages)).ToBe(2)
-	msg := scl.messages[0]
-	Expect(t, msg.Blocks[0].BlockType()).ToBe(slack.MBTContext)
-	// Expect(t, msg.Blocks[1].BlockType()).ToBe(slack.MBTImage)
-	// blck := msg.Blocks[0].(*slack.ImageBlock)
-	// Expect(t, blck.ImageURL).Match(".gif")
 
-	// err = cmd.Execute(ctx, scl, slackevents.AppMentionEvent{Text: "@amesh"})
-	// Expect(t, err).ToBe(nil)
-	// Expect(t, scl.messages[1].Blocks[0].(*slack.ImageBlock).ImageURL).Match(".png")
+	ev.Text = "@amesh"
+
+	err := cmd.Execute(ctx, scl, ev)
+	Expect(t, err).ToBe(nil)
+
+	When(t, "animated option given", func(t *testing.T) {
+		scl := &mockSlackClient{}
+		ev.Text = "@amesh -a"
+		err := cmd.Execute(ctx, scl, ev)
+		Expect(t, err).ToBe(nil)
+		Expect(t, len(scl.messages)).ToBe(2)
+		msg := scl.messages[0]
+		Expect(t, msg.Blocks[0].BlockType()).ToBe(slack.MBTContext)
+	})
+
+	When(t, "help requested", func(t *testing.T) {
+		scl := &mockSlackClient{}
+		ev.Text = "@amesh -h"
+		err := cmd.Execute(ctx, scl, ev)
+		Expect(t, err).ToBe(nil)
+	})
 }
 
 func TestAmeshCommand_Help(t *testing.T) {
