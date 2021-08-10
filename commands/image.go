@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -38,10 +39,22 @@ func (cmd ImageCommand) Match(event slackevents.AppMentionEvent) bool {
 // Handle ...
 func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
 
-	safe := "active"
+	help := bytes.NewBuffer(nil)
+	unsafe := false
+	verbose := false
 	fset := largo.NewFlagSet("img", largo.ContinueOnError)
+	fset.Description = "画像検索コマンド"
+	fset.BoolVar(&unsafe, "unsafe", false, "セーフサーチを無効にした検索をします")
+	fset.BoolVar(&verbose, "verbose", false, "検索のverboseログを表示します").Alias("v")
+	fset.Output = help
 	fset.Parse(largo.Tokenize(event.Text)[2:])
 	words := fset.Rest()
+
+	if fset.HelpRequested() {
+		msg := service.SlackMsg{Channel: event.Channel, Text: "```" + help.String() + "```"}
+		_, err := client.PostMessage(ctx, msg)
+		return err
+	}
 
 	rand.Seed(time.Now().Unix())
 	query := strings.Join(words, "+")
@@ -49,7 +62,11 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	q.Add("q", query)
 	q.Add("num", "10")
 	q.Add("start", fmt.Sprintf("%d", 1+rand.Intn(10)))
-	q.Add("safe", safe)
+	if unsafe {
+		q.Add("safe", "off")
+	} else {
+		q.Add("safe", "active")
+	}
 	q.Add("searchType", "image")
 
 	res, err := cmd.Search.CustomSearch(q)
@@ -78,6 +95,16 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 		slack.PlainTextType, item.Title, false, false,
 	))
 	msg.Blocks = append(msg.Blocks, block)
+
+	if verbose {
+		msg.Blocks = append(msg.Blocks, slack.NewContextBlock("",
+			slack.NewTextBlockObject(
+				slack.MarkdownType,
+				item.Image.ContextLink+"\n"+cmd.formatQueryMetadata(q),
+				false, false,
+			),
+		))
+	}
 
 	_, err = client.PostMessage(ctx, msg)
 	// FIXME: slack-imgs.comのproxy errorが出るとすればここだと思う
