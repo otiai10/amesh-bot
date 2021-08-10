@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"cloud.google.com/go/logging"
@@ -10,10 +11,10 @@ import (
 	"github.com/slack-go/slack/slackevents"
 )
 
-type mockLog struct{}
+type mockLogger struct{}
 
-func (ml *mockLog) Logger(name string, opt ...logging.LoggerOption) *logging.Logger {
-	return new(logging.Logger)
+func (ml *mockLogger) Log(e logging.Entry) {
+	// pass
 }
 
 type mockSlack struct{}
@@ -30,15 +31,55 @@ func (ms *mockSlack) UpdateMessage(ctx context.Context, msg interface{}) error {
 	return nil
 }
 
+type dummycommand struct {
+	err error
+}
+
+func (dc *dummycommand) Match(ev slackevents.AppMentionEvent) bool {
+	return true
+}
+
+func (dc *dummycommand) Help() string {
+	return ""
+}
+
+func (dc *dummycommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error {
+	return dc.err
+}
+
 func TestBot_Handle(t *testing.T) {
-	bot := Bot{Log: &mockLog{}}
+	oauth := service.OAuthResponse{}
+	event := slackevents.AppMentionEvent{Text: "@amesh"}
+	bot := Bot{Logger: &mockLogger{}}
 	ctx := context.Background()
-	bot.Handle(ctx, service.OAuthResponse{}, slackevents.AppMentionEvent{Text: "@amesh"})
-	m.Expect(t, true).ToBe(true)
+	bot.Handle(ctx, oauth, event)
+
+	m.When(t, "command returns error", func(t *testing.T) {
+		bot.Commands = append(bot.Commands, &dummycommand{err: fmt.Errorf("test_test")})
+		bot.Handle(ctx, oauth, event)
+
+		event.Text = "@amesh help"
+		bot.Handle(ctx, oauth, event)
+	})
+
+	m.When(t, "default set", func(t *testing.T) {
+		bot.Commands = []Command{}
+		bot.Default = &dummycommand{}
+		event.Text = "@amesh hoge"
+		bot.Handle(ctx, oauth, event)
+	})
+
+	m.When(t, "notfound set", func(t *testing.T) {
+		bot.Commands = []Command{}
+		bot.Default = nil
+		bot.NotFound = &dummycommand{err: fmt.Errorf("error on notfound")}
+		event.Text = "@amesh hoge"
+		bot.Handle(ctx, oauth, event)
+	})
 }
 
 func TestBot_Help(t *testing.T) {
-	bot := Bot{Log: &mockLog{}}
+	bot := Bot{Logger: &mockLogger{}}
 	ctx := context.Background()
 	bot.Help(ctx, &mockSlack{}, slackevents.AppMentionEvent{})
 }
