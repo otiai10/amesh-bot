@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"os"
 
 	"cloud.google.com/go/logging"
 	"github.com/otiai10/amesh-bot/service"
@@ -16,8 +15,8 @@ type (
 		Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error
 		Help() string
 	}
-	Log interface {
-		Logger(name string, opts ...logging.LoggerOption) *logging.Logger
+	Logger interface {
+		Log(logging.Entry)
 	}
 )
 
@@ -30,20 +29,19 @@ type (
 		// 不明なコマンドを受け取った場合の挙動
 		NotFound Command
 
-		Log Log
+		Logger Logger
 	}
 )
 
 func (b *Bot) Handle(ctx context.Context, team service.OAuthResponse, event slackevents.AppMentionEvent) {
 	client := service.NewSlackClient(team.AccessToken)
 
-	logger := b.Log.Logger("bot")
-	if os.Getenv("DEV_SLACK_APP_ID") != "" {
-		logger.Log(logging.Entry{Severity: logging.Debug, Payload: event})
-	}
+	// if os.Getenv("DEV_SLACK_APP_ID") != "" {
+	// 	b.Logger.Log(logging.Entry{Severity: logging.Debug, Payload: event})
+	// }
 
 	if cmderr := b.handle(ctx, client, event); cmderr != nil {
-		logger.Log(logging.Entry{Severity: logging.Error, Payload: cmderr, Labels: cmderr.labels()})
+		b.Logger.Log(logging.Entry{Severity: logging.Error, Payload: cmderr, Labels: cmderr.labels()})
 	}
 }
 

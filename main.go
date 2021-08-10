@@ -38,7 +38,7 @@ func main() {
 		},
 		Default:  commands.AmeshCommand{Storage: &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"}},
 		NotFound: commands.NotFound{},
-		Log:      lg,
+		Logger:   lg.Logger("bot"),
 	}
 	c := controllers.Controller{
 		Bot:       b,

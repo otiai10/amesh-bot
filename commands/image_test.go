@@ -50,7 +50,5 @@ func TestImageCommand_Execute(t *testing.T) {
 		cmd.Search = search
 		err := cmd.Execute(ctx, sc, event)
 		Expect(t, err).ToBe(nil)
-		msg := sc.messages[0]
-		Expect(t, msg.Text).Match("Not found for query:")
 	})
 }

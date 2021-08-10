@@ -16,7 +16,7 @@ func (b *Bot) Help(ctx context.Context, client service.ISlackClient, event slack
 	for _, cmd := range append([]Command{b.Default}, b.Commands...) {
 		if cmd != nil {
 			block := slack.NewSectionBlock(
-				slack.NewTextBlockObject(slack.MarkdownType, cmd.Help(), false, false),
+				slack.NewTextBlockObject(slack.MarkdownType, cmd.Help(), false, true),
 				nil, nil,
 			)
 			msg.Blocks = append(msg.Blocks, block)

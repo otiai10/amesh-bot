@@ -47,10 +47,10 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	query := strings.Join(words, "+")
 	q := url.Values{}
 	q.Add("q", query)
-	q.Add("searchType", "image")
 	q.Add("num", "10")
 	q.Add("start", fmt.Sprintf("%d", 1+rand.Intn(10)))
 	q.Add("safe", safe)
+	q.Add("searchType", "image")
 
 	res, err := cmd.Search.CustomSearch(q)
 	if err != nil {
@@ -66,9 +66,7 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	msg := service.SlackMsg{Channel: event.Channel}
 
 	if len(result.Items) == 0 {
-		q.Del("cx")
-		q.Del("key")
-		msg.Text = fmt.Sprintf("Not found for query: %v", q)
+		msg.Blocks = append(msg.Blocks, cmd.notfoundMessageBlock(q))
 		_, err = client.PostMessage(ctx, msg)
 		return err
 	}
@@ -76,14 +74,31 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	index := rand.Intn(len(result.Items))
 	item := result.Items[index]
 
-	block := slack.NewImageBlock(item.Link, item.Title, "", nil)
+	block := slack.NewImageBlock(item.Link, item.Title, "", slack.NewTextBlockObject(
+		slack.PlainTextType, item.Title, false, false,
+	))
 	msg.Blocks = append(msg.Blocks, block)
 
 	_, err = client.PostMessage(ctx, msg)
+	// FIXME: slack-imgs.comのproxy errorが出るとすればここだと思う
 	return err
 }
 
 // Help ...
 func (cmd ImageCommand) Help() string {
 	return "画像検索コマンド\n```@amesh img|image {query}```"
+}
+
+func (cmd ImageCommand) notfoundMessageBlock(q url.Values) slack.Block {
+	q.Del("cx")
+	q.Del("key")
+	text := ":neutral_face: 画像が見つかりませんでした: " + cmd.formatQueryMetadata(q)
+	return slack.NewContextBlock("", slack.NewTextBlockObject(slack.MarkdownType, text, false, true))
+}
+
+func (cmd ImageCommand) formatQueryMetadata(q url.Values) string {
+	return fmt.Sprintf(
+		"q=%s, num=%s, start=%s, safe=%s",
+		q.Get("q"), q.Get("num"), q.Get("start"), q.Get("safe"),
+	)
 }
