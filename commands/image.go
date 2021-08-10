@@ -41,9 +41,11 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 
 	help := bytes.NewBuffer(nil)
 	unsafe := false
+	verbose := false
 	fset := largo.NewFlagSet("img", largo.ContinueOnError)
 	fset.Description = "画像検索コマンド"
 	fset.BoolVar(&unsafe, "unsafe", false, "セーフサーチを無効にした検索をします")
+	fset.BoolVar(&verbose, "verbose", false, "検索のverboseログを表示します").Alias("v")
 	fset.Output = help
 	fset.Parse(largo.Tokenize(event.Text)[2:])
 	words := fset.Rest()
@@ -93,6 +95,16 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 		slack.PlainTextType, item.Title, false, false,
 	))
 	msg.Blocks = append(msg.Blocks, block)
+
+	if verbose {
+		msg.Blocks = append(msg.Blocks, slack.NewContextBlock("",
+			slack.NewTextBlockObject(
+				slack.MarkdownType,
+				item.Image.ContextLink+"\n"+cmd.formatQueryMetadata(q),
+				false, false,
+			),
+		))
+	}
 
 	_, err = client.PostMessage(ctx, msg)
 	// FIXME: slack-imgs.comのproxy errorが出るとすればここだと思う

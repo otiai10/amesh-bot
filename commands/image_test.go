@@ -66,4 +66,16 @@ func TestImageCommand_Execute(t *testing.T) {
 		err := cmd.Execute(ctx, sc, event)
 		Expect(t, err).ToBe(nil)
 	})
+
+	When(t, "verbose given", func(t *testing.T) {
+		sc := &mockSlackClient{}
+		search.ResponseBody = `{
+			"items": [
+				{"title":"hoge", "link":"qwerty"}
+			]
+		}`
+		event.Text = "@amesh img foobaa -v"
+		err := cmd.Execute(ctx, sc, event)
+		Expect(t, err).ToBe(nil)
+	})
 }
