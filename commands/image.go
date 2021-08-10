@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -38,10 +39,18 @@ func (cmd ImageCommand) Match(event slackevents.AppMentionEvent) bool {
 // Handle ...
 func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
 
+	help := bytes.NewBuffer(nil)
 	safe := "active"
 	fset := largo.NewFlagSet("img", largo.ContinueOnError)
+	fset.Output = help
 	fset.Parse(largo.Tokenize(event.Text)[2:])
 	words := fset.Rest()
+
+	if fset.HelpRequested() {
+		msg := service.SlackMsg{Channel: event.Channel, Text: help.String()}
+		_, err := client.PostMessage(ctx, msg)
+		return err
+	}
 
 	rand.Seed(time.Now().Unix())
 	query := strings.Join(words, "+")

@@ -51,4 +51,12 @@ func TestImageCommand_Execute(t *testing.T) {
 		err := cmd.Execute(ctx, sc, event)
 		Expect(t, err).ToBe(nil)
 	})
+
+	When(t, "help requested", func(t *testing.T) {
+		sc := &mockSlackClient{}
+		event.Text = "@amesh img -h"
+		err := cmd.Execute(ctx, sc, event)
+		Expect(t, err).ToBe(nil)
+		Expect(t, sc.messages[0].Text).Match("NAME\n  img")
+	})
 }
