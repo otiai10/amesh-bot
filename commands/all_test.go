@@ -3,12 +3,30 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"testing"
+	"time"
 
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/mint"
 )
+
+var (
+	timezone *time.Location
+)
+
+func TestMain(m *testing.M) {
+	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		log.Fatalf("failed to load location: %v", err)
+	}
+	timezone = tokyo
+	code := m.Run()
+	os.Exit(code)
+}
 
 // CloudStorage
 type mockStorage struct{}

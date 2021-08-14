@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"cloud.google.com/go/logging"
 	"github.com/otiai10/amesh-bot/bot"
@@ -14,6 +15,18 @@ import (
 	"github.com/otiai10/goapis/google"
 	"github.com/otiai10/marmoset"
 )
+
+var (
+	timezone *time.Location
+)
+
+func init() {
+	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		log.Fatalf("failed to load location: %v", err)
+	}
+	timezone = tokyo
+}
 
 func main() {
 
@@ -32,11 +45,16 @@ func main() {
 	b := &bot.Bot{
 		Commands: []bot.Command{
 			commands.ImageCommand{Search: g},
-			commands.ForecastCommand{SourceURL: "https://www.jma.go.jp/bosai/forecast"},
+			commands.ForecastCommand{
+				SourceURL: "https://www.jma.go.jp/bosai/forecast", Timezone: timezone,
+			},
 			commands.GoogleCommand{Search: g},
 			commands.LGTMCommand{Service: service.LGTM{}},
 		},
-		Default:  commands.AmeshCommand{Storage: &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"}},
+		Default: commands.AmeshCommand{
+			Storage:  &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"},
+			Timezone: timezone,
+		},
 		NotFound: commands.NotFound{},
 		Logger:   lg.Logger("bot"),
 	}
