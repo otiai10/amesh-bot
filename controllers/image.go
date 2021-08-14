@@ -3,6 +3,7 @@ package controllers
 import (
 	"image"
 	"net/http"
+	"strconv"
 
 	"image/gif"
 	"image/jpeg"
@@ -21,7 +22,12 @@ func Image(w http.ResponseWriter, req *http.Request) {
 
 	origin := req.URL.Query().Get("url")
 	filter := req.URL.Query().Get("filter")
-	// level := req.URL.Query().Get("level")
+	levelstr := req.URL.Query().Get("level")
+
+	level := 60
+	if lv, err := strconv.Atoi(levelstr); err == nil {
+		level = lv
+	}
 
 	// originalの画像バイナリを取得.
 	res, err := http.Get(origin)
@@ -45,7 +51,7 @@ func Image(w http.ResponseWriter, req *http.Request) {
 	g := gift.New()
 	switch filter {
 	default:
-		g.Add(gift.Pixelate(20))
+		g.Add(gift.Pixelate(level))
 	}
 
 	dest := image.NewRGBA(g.Bounds(src.Bounds()))

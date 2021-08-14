@@ -43,11 +43,13 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	unsafe := false
 	verbose := false
 	filter := false // TODO: 今はBoolVarだが、他のfilterにも対応した
+	flevel := 60
 	fset := largo.NewFlagSet("img", largo.ContinueOnError)
 	fset.Description = "画像検索コマンド"
 	fset.BoolVar(&unsafe, "unsafe", false, "セーフサーチを無効にした検索をします")
 	fset.BoolVar(&verbose, "verbose", false, "検索のverboseログを表示します").Alias("v")
 	fset.BoolVar(&filter, "filter", false, "画像をフィルタ処理して表示します（今はモザイクだけ対応）").Alias("F")
+	fset.IntVar(&flevel, "level", 60, "画像フィルタの強さ").Alias("L")
 	fset.Output = help
 	fset.Parse(largo.Tokenize(event.Text)[2:])
 	words := fset.Rest()
@@ -98,7 +100,7 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 
 	if req, ok := ctx.Value("webhook_request").(*http.Request); ok && filter {
 		u, _ := url.Parse("https://" + req.Host + "/image")
-		u.RawQuery = url.Values{"url": []string{link}}.Encode()
+		u.RawQuery = url.Values{"url": {link}, "level": {fmt.Sprintf("%d", flevel)}}.Encode()
 		// AppEngine上のProxyサーバのエンドポイントを向かせる
 		// あとの流れは、controllers.Imageを参照
 		link = u.String()
