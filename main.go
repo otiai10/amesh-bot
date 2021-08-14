@@ -65,6 +65,10 @@ func main() {
 	}
 	r.POST("/slack/webhook", c.Webhook)
 	r.GET("/slack/oauth", c.OAuth)
+
+	// 画像フィルタリング
+	r.GET("/image", controllers.Image)
+
 	http.Handle("/", r)
 
 	port := os.Getenv("PORT")
