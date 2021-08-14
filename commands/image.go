@@ -42,10 +42,12 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	help := bytes.NewBuffer(nil)
 	unsafe := false
 	verbose := false
+	filter := false // TODO: 今はBoolVarだが、他のfilterにも対応した
 	fset := largo.NewFlagSet("img", largo.ContinueOnError)
 	fset.Description = "画像検索コマンド"
 	fset.BoolVar(&unsafe, "unsafe", false, "セーフサーチを無効にした検索をします")
 	fset.BoolVar(&verbose, "verbose", false, "検索のverboseログを表示します").Alias("v")
+	fset.BoolVar(&filter, "filter", false, "画像をフィルタ処理して表示します（今はモザイクだけ対応）").Alias("F")
 	fset.Output = help
 	fset.Parse(largo.Tokenize(event.Text)[2:])
 	words := fset.Rest()
@@ -91,7 +93,18 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	index := rand.Intn(len(result.Items))
 	item := result.Items[index]
 
-	block := slack.NewImageBlock(item.Link, item.Title, "", slack.NewTextBlockObject(
+	link := item.Link
+	title := item.Title
+
+	if req, ok := ctx.Value("webhook_request").(*http.Request); ok && filter {
+		u, _ := url.Parse("https://" + req.Host + "/image")
+		u.RawQuery = url.Values{"url": []string{link}}.Encode()
+		// AppEngine上のProxyサーバのエンドポイントを向かせる
+		// あとの流れは、controllers.Imageを参照
+		link = u.String()
+	}
+
+	block := slack.NewImageBlock(link, title, "", slack.NewTextBlockObject(
 		slack.PlainTextType, item.Title, false, false,
 	))
 	msg.Blocks = append(msg.Blocks, block)

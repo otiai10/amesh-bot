@@ -51,13 +51,15 @@ func Image(w http.ResponseWriter, req *http.Request) {
 	dest := image.NewRGBA(g.Bounds(src.Bounds()))
 	g.Draw(dest, src)
 
-	w.Header().Add("Content-Type", res.Header.Get("Content-Type"))
 	switch fmtname {
 	case "png":
+		w.Header().Add("Content-Type", "image/png")
 		png.Encode(w, dest)
 	case "gif":
+		w.Header().Add("Content-Type", "image/gif")
 		gif.Encode(w, dest, nil)
 	case "jpeg":
+		w.Header().Add("Content-Type", "image/jpeg")
 		jpeg.Encode(w, dest, nil)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)

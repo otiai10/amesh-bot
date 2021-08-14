@@ -52,7 +52,9 @@ func (c *Controller) Webhook(w http.ResponseWriter, req *http.Request) {
 		team.AccessToken = os.Getenv("DEV_SLACK_BOT_USER_OAUTH_TOKEN")
 	}
 
-	go c.Bot.Handle(context.Background(), team, payload.Event)
+	// TODO: BotがRequestの情報を参照できるよう、Contextに含める
+	ctx := context.WithValue(context.Background(), "webhook_request", req)
+	go c.Bot.Handle(ctx, team, payload.Event)
 
 	return
 
