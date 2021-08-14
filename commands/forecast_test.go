@@ -13,7 +13,7 @@ import (
 )
 
 func TestForecastCommand_Match(t *testing.T) {
-	cmd := ForecastCommand{}
+	cmd := ForecastCommand{Timezone: timezone}
 	m := cmd.Match(slackevents.AppMentionEvent{Text: "@amesh forecast"})
 	Expect(t, m).ToBe(true)
 	m = cmd.Match(slackevents.AppMentionEvent{Text: "@amesh"})
@@ -23,7 +23,7 @@ func TestForecastCommand_Match(t *testing.T) {
 }
 
 func TestForecastCommand_Help(t *testing.T) {
-	cmd := ForecastCommand{}
+	cmd := ForecastCommand{Timezone: timezone}
 	help := cmd.Help()
 	Expect(t, help).ToBe("天気予報コマンド\n```@amesh forecast|予報 {都市の名前=tokyo}```")
 }
@@ -67,7 +67,7 @@ func TestForecastCommand_Execute(t *testing.T) {
 	s := httptest.NewServer(m)
 
 	sc := new(mockSlackClient)
-	cmd := ForecastCommand{SourceURL: s.URL}
+	cmd := ForecastCommand{SourceURL: s.URL, Timezone: timezone}
 	ctx := context.Background()
 	ev := slackevents.AppMentionEvent{Text: "@amesh forecast"}
 	err := cmd.Execute(ctx, sc, ev)

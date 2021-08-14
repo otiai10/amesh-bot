@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.4.0
 	cloud.google.com/go/logging v1.4.2
 	cloud.google.com/go/storage v1.16.0
+	github.com/disintegration/gift v1.2.1
 	github.com/otiai10/amesh v1.2.7
 	github.com/otiai10/goapis v0.0.14
 	github.com/otiai10/ja v0.0.0-20210802063633-40ce46e41595

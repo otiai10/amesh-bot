@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/ja"
@@ -17,6 +18,7 @@ import (
 
 type ForecastCommand struct {
 	SourceURL string
+	Timezone  *time.Location
 }
 
 func (cmd ForecastCommand) Match(event slackevents.AppMentionEvent) bool {
@@ -126,7 +128,7 @@ func (cmd ForecastCommand) FormatForecastToSlackBlocks(entries []api.Comprehensi
 	// 1日を1-block == 1-rowで表現している
 	for i, t := range weekly.TimeSeries[0].TimeDefines {
 		weather := jma.Weathers[codes[i]]
-		date := t.Format("01/02") + fmt.Sprintf("（%s）", ja.Weekday[t.Local().Weekday()])
+		date := t.In(cmd.Timezone).Format("01/02") + fmt.Sprintf("（%s）", ja.Weekday[t.Local().Weekday()])
 		columns := []slack.MixedElement{
 			slack.NewTextBlockObject(slack.MarkdownType, date, false, false),                // 日付
 			slack.NewTextBlockObject(slack.MarkdownType, weather.Emoji.Slack, false, false), // 天気emoji

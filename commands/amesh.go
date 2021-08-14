@@ -28,7 +28,8 @@ type (
 
 // AmeshCommand ...
 type AmeshCommand struct {
-	Storage CloudStorage
+	Storage  CloudStorage
+	Timezone *time.Location
 }
 
 func (cmd AmeshCommand) newFlagSet(animated *bool, help io.Writer) *largo.FlagSet {
@@ -60,11 +61,7 @@ func (cmd AmeshCommand) Execute(ctx context.Context, client service.ISlackClient
 		return fmt.Errorf("failed to parse arguments: %v", err)
 	}
 
-	tokyo, err := time.LoadLocation("Asia/Tokyo")
-	if err != nil {
-		return fmt.Errorf("failed to load location: %v", err)
-	}
-	now := time.Now().In(tokyo)
+	now := time.Now().In(cmd.Timezone)
 
 	switch {
 	case fset.HelpRequested():

@@ -11,7 +11,7 @@ import (
 
 func TestAmeshCommand_Match(t *testing.T) {
 	str := &mockStorage{}
-	cmd := AmeshCommand{Storage: str}
+	cmd := AmeshCommand{Storage: str, Timezone: timezone}
 	m := cmd.Match(slackevents.AppMentionEvent{Text: "@amesh"})
 	Expect(t, m).ToBe(true)
 }
@@ -19,7 +19,7 @@ func TestAmeshCommand_Match(t *testing.T) {
 func TestAmeshCommand_Execute(t *testing.T) {
 	ctx := context.Background()
 	str := &mockStorage{}
-	cmd := AmeshCommand{Storage: str}
+	cmd := AmeshCommand{Storage: str, Timezone: timezone}
 	ev := slackevents.AppMentionEvent{}
 	scl := &mockSlackClient{}
 
@@ -48,7 +48,7 @@ func TestAmeshCommand_Execute(t *testing.T) {
 
 func TestAmeshCommand_Help(t *testing.T) {
 	str := &mockStorage{}
-	cmd := AmeshCommand{Storage: str}
+	cmd := AmeshCommand{Storage: str, Timezone: timezone}
 	msg := cmd.Help()
 	Expect(t, msg).Not().ToBe("")
 }
