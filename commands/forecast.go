@@ -125,10 +125,10 @@ func (cmd ForecastCommand) FormatForecastToSlackBlocks(entries []api.Comprehensi
 	blocks = append(blocks, slack.NewSectionBlock(title, nil, nil))
 
 	// 7日間分作成. k == 0 で固定していることに注意
-	// 1日を1-block == 1-rowで表現している
+	// 1日を1行（= 1block）で表現している
 	for i, t := range weekly.TimeSeries[0].TimeDefines {
 		weather := jma.Weathers[codes[i]]
-		date := t.In(cmd.Timezone).Format("01/02") + fmt.Sprintf("（%s）", ja.Weekday[t.Local().Weekday()])
+		date := t.In(cmd.Timezone).Format("01/02") + fmt.Sprintf("（%s）", ja.Weekday[t.Weekday()])
 		columns := []slack.MixedElement{
 			slack.NewTextBlockObject(slack.MarkdownType, date, false, false),                // 日付
 			slack.NewTextBlockObject(slack.MarkdownType, weather.Emoji.Slack, false, false), // 天気emoji
