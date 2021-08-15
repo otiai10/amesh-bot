@@ -2,11 +2,13 @@ package commands
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"os"
 	"testing"
 
+	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 
 	. "github.com/otiai10/mint"
@@ -32,37 +34,12 @@ func TestForecastCommand_Execute(t *testing.T) {
 
 	m := http.NewServeMux()
 	m.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		if strings.Contains(req.URL.Path, "/data/forecast") {
-			w.Write([]byte(`[
-				{},
-				{
-					"timeSeries": [
-						{
-							"timeDefines": ["2021-08-06T11:00:00+09:00", "2021-08-07T00:00:00+09:00", "2021-08-08T00:00:00+09:00"],
-							"areas": [{
-								"weatherCodes": ["111", "203", "300"],
-								"pops": ["", "90", "50"]
-							}]
-						},
-						{
-							"areas": [{
-								"tempsMin": ["", "23", "25"],
-								"tempsMax": ["", "33", "33"]
-							}]
-						}
-					]
-				}
-			]`))
-		} else if strings.Contains(req.URL.Path, "/overview_week") {
-			w.Write([]byte(`{
-				"publishingOffice": "気象庁",
-				"reportDatetime": "2021-08-06T10:46:00+09:00",
-				"headTitle": "関東甲信地方週間天気予報",
-				"text": "予報期間　８月７日から８月１３日まで\n　向こう一週間は、台風第１０号や湿った空気の影響で雲が広がりやすく、雨の降る日があるでしょう。なお、７日から８日にかけては台風第１０号の影響で荒れた天気となり、大しけとなるおそれがあります。また、台風の進路や発達の程度等によっては大雨のおそれもあります。\n　最高気温と最低気温はともに、期間の前半は平年並か平年より高い日が多いですが、期間の後半は平年並か平年より低い日が多い見込みです。\n　降水量は、平年より多いでしょう。"
-			}`))
-		} else {
+		f, err := os.Open("../testdata" + req.URL.Path)
+		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 		}
+		defer f.Close()
+		io.Copy(w, f)
 	})
 	s := httptest.NewServer(m)
 
@@ -72,6 +49,23 @@ func TestForecastCommand_Execute(t *testing.T) {
 	ev := slackevents.AppMentionEvent{Text: "@amesh forecast"}
 	err := cmd.Execute(ctx, sc, ev)
 	Expect(t, err).ToBe(nil)
+
+	msg := sc.messages[0]
+	Expect(t, msg.Blocks[0].BlockType()).ToBe(slack.MBTSection)
+	Expect(t, msg.Blocks[1].BlockType()).ToBe(slack.MBTContext)
+	Expect(t, len(msg.Blocks)).ToBe(1 + 9) // 東京地方、っていうタイトル + 9日分
+
+	day1 := msg.Blocks[1].(*slack.ContextBlock).ContextElements
+	d1_e0 := day1.Elements[0].(*slack.TextBlockObject)
+	Expect(t, d1_e0.Text).ToBe("08/15（日）")
+
+	day2 := msg.Blocks[2].(*slack.ContextBlock).ContextElements
+	d2_e0 := day2.Elements[0].(*slack.TextBlockObject)
+	Expect(t, d2_e0.Text).ToBe("08/16（月）")
+
+	day3 := msg.Blocks[3].(*slack.ContextBlock).ContextElements
+	d3_e0 := day3.Elements[0].(*slack.TextBlockObject)
+	Expect(t, d3_e0.Text).ToBe("08/17（火）")
 
 	When(t, "-help given", func(t *testing.T) {
 		sc := new(mockSlackClient)
