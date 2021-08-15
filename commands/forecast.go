@@ -112,6 +112,7 @@ func (cmd ForecastCommand) Help() string {
 func (cmd ForecastCommand) FormatForecastToSlackBlocks(entries []api.ComprehensiveForecastEntry, overview *api.OverviewWeek) (blocks []slack.Block) {
 
 	k := 0 // まずは一番うえのAreaだけ見る, which means 伊豆諸島・小笠原諸島を無視している
+
 	// {{{ エリア「k」における情報をまず抽出
 	weekly := entries[1]
 	codes := weekly.TimeSeries[0].Areas[k].WeatherCodes
@@ -124,23 +125,83 @@ func (cmd ForecastCommand) FormatForecastToSlackBlocks(entries []api.Comprehensi
 	title := slack.NewTextBlockObject(slack.MarkdownType, fmt.Sprintf("*%s*", area.Area.Name), false, false)
 	blocks = append(blocks, slack.NewSectionBlock(title, nil, nil))
 
+	rows := []Row{}
+
+	// {{{ 最初の数日分を作成
+	// 実はweeklyは、明日からの予報しかないうえに、明日の予報の情報を欠損している.
+	// したがって、entries[0]を解釈し、今日と明日の予報を生成する必要がある.
+	coming := entries[0]
+	for i, t := range coming.TimeSeries[0].TimeDefines {
+		row := Row{
+			Date:    t,
+			Weather: jma.Weathers[coming.TimeSeries[0].Areas[k].WeatherCodes[i]],
+		}
+		rows = append(rows, row)
+	}
+	// }}}
+
+	// {{{ 最初の数日の最高気温最低気温を補完
+	for i, t := range coming.TimeSeries[2].TimeDefines {
+		tmps := coming.TimeSeries[2].Areas[k].Temps
+		for j, r := range rows {
+			if DateDecimal(r.Date) == DateDecimal(t) {
+				// 同じ日付のエントリだが、最高気温なのか最低気温なのか、判断基準が無い
+				if r.TempMax == "" { // とりあえず埋める
+					rows[j].TempMax, rows[j].TempMin = tmps[i], tmps[i]
+				} else if r.TempMax < tmps[i] { // 来たものがMaxより上ならMax
+					rows[j].TempMax = tmps[i]
+				} else if r.TempMin > tmps[i] { // 来たものがMinより下ならMin
+					rows[j].TempMin = tmps[i]
+				}
+			}
+		}
+	}
+	// }}}
+
+	// {{{ 最初の数日の降水確率を補完
+	for i, t := range coming.TimeSeries[1].TimeDefines {
+		pops := coming.TimeSeries[1].Areas[k].Pops
+		for j, r := range rows {
+			if DateDecimal(r.Date) == DateDecimal(t) {
+				// 降水確率は時系列なので、単純にその日の降水確率にappendでよい
+				rows[j].PoPs = append(rows[j].PoPs, pops[i])
+			}
+		}
+	}
+	// }}}
+
 	// 7日間分作成. k == 0 で固定していることに注意
 	// 1日を1行（= 1block）で表現している
 	for i, t := range weekly.TimeSeries[0].TimeDefines {
-		weather := jma.Weathers[codes[i]]
-		date := t.In(cmd.Timezone).Format("01/02") + fmt.Sprintf("（%s）", ja.Weekday[t.Weekday()])
-		columns := []slack.MixedElement{
-			slack.NewTextBlockObject(slack.MarkdownType, date, false, false),                // 日付
-			slack.NewTextBlockObject(slack.MarkdownType, weather.Emoji.Slack, false, false), // 天気emoji
+		// すでに上記のブロックで最初の数日登録されている場合があるので、チェック
+		done := false
+		for j, r := range rows {
+			if DateDecimal(r.Date) == DateDecimal(t) {
+				// 補完だけする
+				if r.TempMax == "" || r.TempMin == "" {
+					rows[j].TempMax = temps.TempsMax[i]
+					rows[j].TempMin = temps.TempsMin[i]
+				}
+				if len(r.PoPs) == 0 {
+					rows[j].PoPs = append(r.PoPs, pops[i])
+				}
+				done = true
+				break
+			}
 		}
-		if temps.TempsMax[i] != "" || temps.TempsMin[i] != "" { // 気温を追加
-			t := fmt.Sprintf("%s/%s℃", temps.TempsMax[i], temps.TempsMin[i])
-			columns = append(columns, slack.NewTextBlockObject(slack.MarkdownType, t, false, false))
+		if !done {
+			rows = append(rows, Row{
+				Date:    t,
+				Weather: jma.Weathers[codes[i]],
+				TempMax: temps.TempsMax[i],
+				TempMin: temps.TempsMin[i],
+				PoPs:    []string{pops[i]},
+			})
 		}
-		if pops[i] != "" { // 降水確率を追加
-			columns = append(columns, slack.NewTextBlockObject(slack.MarkdownType, pops[i]+"%", false, false))
-		}
-		blocks = append(blocks, slack.NewContextBlock("", columns...))
+	}
+
+	for _, row := range rows {
+		blocks = append(blocks, row.ToSlackBlock())
 	}
 
 	// 広域のOverviewをヘッドラインとして表示
@@ -152,4 +213,39 @@ func (cmd ForecastCommand) FormatForecastToSlackBlocks(entries []api.Comprehensi
 	}
 
 	return blocks
+}
+
+type (
+	Row struct {
+		Date    time.Time
+		Weather jma.Weather
+		TempMax string
+		TempMin string
+		PoPs    []string
+	}
+)
+
+func (row Row) ToSlackBlock() *slack.ContextBlock {
+	date := row.Date.Format("01/02") + fmt.Sprintf("（%s）", ja.Weekday[row.Date.Weekday()])
+	columns := []slack.MixedElement{
+		slack.NewTextBlockObject(slack.MarkdownType, date, false, false),                    // 日付
+		slack.NewTextBlockObject(slack.MarkdownType, row.Weather.Emoji.Slack, false, false), // 天気emoji
+	}
+	if row.TempMax != "" || row.TempMin != "" { // 気温を追加
+		t := fmt.Sprintf("%s/%s℃", row.TempMax, row.TempMin)
+		columns = append(columns, slack.NewTextBlockObject(slack.MarkdownType, t, false, false))
+	}
+	if len(row.PoPs) != 0 { // 降水確率を追加
+		for i, pop := range row.PoPs {
+			row.PoPs[i] = pop + "%"
+		}
+		columns = append(columns, slack.NewTextBlockObject(slack.MarkdownType, strings.Join(row.PoPs, "/"), false, false))
+	}
+	return slack.NewContextBlock("", columns...)
+}
+
+// 2021/08/15 -> 20210815
+func DateDecimal(t time.Time) int {
+	y, m, d := t.Date()
+	return y*10000 + int(m)*100 + d
 }
