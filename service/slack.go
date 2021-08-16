@@ -26,10 +26,13 @@ type (
 	}
 
 	SlackMsg struct {
-		Channel   string        `json:"channel"`
-		Text      string        `json:"text,omitempty"`
-		Blocks    []slack.Block `json:"blocks,omitempty"`
-		Timestamp string        `json:"ts,omitempty"`
+		Channel         string        `json:"channel"`
+		Text            string        `json:"text,omitempty"`
+		Blocks          []slack.Block `json:"blocks,omitempty"`
+		Timestamp       string        `json:"ts,omitempty"`
+		ThreadTimestamp string        `json:"thread_ts,omitempty"`
+		UnfurlMedia     *bool         `json:"unfurl_media,omitempty"`
+		// UnfurlLinks  *bool         `json:"unfurl_links,omitempty"`
 	}
 
 	// OAuthResponse ...

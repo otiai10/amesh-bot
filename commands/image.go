@@ -121,8 +121,23 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 		))
 	}
 
-	_, err = client.PostMessage(ctx, msg)
+	sent, err := client.PostMessage(ctx, msg)
 	// FIXME: slack-imgs.comのproxy errorが出るとすればここだと思う
+
+	if err != nil {
+		return err
+	}
+
+	// filterリクエストの場合は、自分の投稿に、unfilterなリンクを返す
+	if filter {
+		unfurl := false
+		_, err = client.PostMessage(ctx, service.SlackMsg{
+			Channel:         event.Channel,
+			ThreadTimestamp: sent.Timestamp,
+			Text:            ":warning: " + item.Link,
+			UnfurlMedia:     &unfurl,
+		})
+	}
 	return err
 }
 
