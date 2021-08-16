@@ -22,6 +22,8 @@ func (cmd EchoCommand) Execute(ctx context.Context, client service.ISlackClient,
 	msg := service.SlackMsg{Channel: event.Channel}
 	tokens := largo.Tokenize(event.Text)[1:]
 	msg.Text = strings.Join(tokens[1:], " ")
+	// スレッドの中での発言なら、スレッドに返す
+	msg.ThreadTimestamp = event.ThreadTimeStamp
 	_, err = client.PostMessage(ctx, msg)
 	return err
 }

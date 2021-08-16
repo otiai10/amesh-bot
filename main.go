@@ -50,6 +50,7 @@ func main() {
 			},
 			commands.GoogleCommand{Search: g},
 			commands.LGTMCommand{Service: service.LGTM{}},
+			commands.EchoCommand{},
 		},
 		Default: commands.AmeshCommand{
 			Storage:  &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"},

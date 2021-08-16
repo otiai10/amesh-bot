@@ -46,8 +46,8 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	flevel := 60
 	fset := largo.NewFlagSet("img", largo.ContinueOnError)
 	fset.Description = "画像検索コマンド"
-	fset.BoolVar(&unsafe, "unsafe", false, "セーフサーチを無効にした検索をします")
 	fset.BoolVar(&verbose, "verbose", false, "検索のverboseログを表示します").Alias("v")
+	fset.BoolVar(&unsafe, "unsafe", false, "セーフサーチを無効にした検索をします").Alias("U")
 	fset.BoolVar(&filter, "filter", false, "画像をフィルタ処理して表示します（今はモザイクだけ対応）").Alias("F")
 	fset.IntVar(&flevel, "level", 60, "画像フィルタの強さ").Alias("L")
 	fset.Output = help
@@ -121,8 +121,23 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 		))
 	}
 
-	_, err = client.PostMessage(ctx, msg)
+	sent, err := client.PostMessage(ctx, msg)
 	// FIXME: slack-imgs.comのproxy errorが出るとすればここだと思う
+
+	if err != nil {
+		return err
+	}
+
+	// filterリクエストの場合は、自分の投稿に、unfilterなリンクを返す
+	if filter {
+		unfurl := false
+		_, err = client.PostMessage(ctx, service.SlackMsg{
+			Channel:         event.Channel,
+			ThreadTimestamp: sent.Timestamp,
+			Text:            ":warning: " + item.Link,
+			UnfurlMedia:     &unfurl,
+		})
+	}
 	return err
 }
 
