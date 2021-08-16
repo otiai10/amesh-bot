@@ -57,6 +57,14 @@ func Image(w http.ResponseWriter, req *http.Request) {
 	dest := image.NewRGBA(g.Bounds(src.Bounds()))
 	g.Draw(dest, src)
 
+	// TODO: Slackの画像取得プロキシの挙動を確認する
+	// このエンドポイントへGETをかけるクライアントは
+	// 標準的なブラウザではなくて, slack-imgs.com なので,
+	// どの程度 Cache-Control が有効か分からないが,
+	// とりあえず1時間を指定するので、リクエストが減ってくれるとうれしいな.
+	// しらんけど.
+	w.Header().Add("Cache-Control", "max-age=3600")
+
 	switch fmtname {
 	case "png":
 		w.Header().Add("Content-Type", "image/png")
