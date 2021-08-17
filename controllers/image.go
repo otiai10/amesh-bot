@@ -18,7 +18,7 @@ import (
 // Slackの画像プロキシサーバ（具体的には https://slack-imgs.com/ ）は、
 // originのURLとfilterのパラメータを含んだリクエストをここにGETするので、
 // filter処理を施した画像バイナリをHTTPレスポンスとして返す.
-func Image(w http.ResponseWriter, req *http.Request) {
+func (c *Controller) Image(w http.ResponseWriter, req *http.Request) {
 
 	origin := req.URL.Query().Get("url")
 	filter := req.URL.Query().Get("filter")
@@ -57,13 +57,10 @@ func Image(w http.ResponseWriter, req *http.Request) {
 	dest := image.NewRGBA(g.Bounds(src.Bounds()))
 	g.Draw(dest, src)
 
-	// TODO: Slackの画像取得プロキシの挙動を確認する
 	// このエンドポイントへGETをかけるクライアントは
 	// 標準的なブラウザではなくて, slack-imgs.com なので,
-	// どの程度 Cache-Control が有効か分からないが,
-	// とりあえず1時間を指定するので、リクエストが減ってくれるとうれしいな.
-	// しらんけど.
-	w.Header().Add("Cache-Control", "max-age=3600")
+	// ここでCache-Controlを返しても意味は無かった.
+	w.Header().Add("Cache-Control", "public,max-age=3600,immutable")
 
 	switch fmtname {
 	case "png":
