@@ -65,7 +65,7 @@ func (cmd AmeshCommand) Execute(ctx context.Context, client service.ISlackClient
 
 	switch {
 	case fset.HelpRequested():
-		msg := service.SlackMsg{Channel: event.Channel}
+		msg := inreply(event)
 		msg.Text = fmt.Sprintf("デフォルトのアメッシュコマンド\n```@amesh [-a] [-h]\n%v```", help.String())
 		_, err = client.PostMessage(ctx, msg)
 		return err
@@ -104,7 +104,7 @@ func (cmd AmeshCommand) snapshot(
 		}
 	}
 
-	msg := service.SlackMsg{Channel: event.Channel}
+	msg := inreply(event)
 	msg.Blocks = append(msg.Blocks, slack.NewImageBlock(furl, datetime, "", nil))
 	_, err = client.PostMessage(ctx, msg)
 	return err
@@ -131,11 +131,9 @@ func (cmd AmeshCommand) animated(
 
 	var placeholder *service.PostMessageResponse = nil
 	if !exists {
-		msg := service.SlackMsg{
-			Channel: event.Channel,
-			Blocks: []slack.Block{
-				slack.NewContextBlock("", slack.NewTextBlockObject(slack.MarkdownType, "タイムラプス画像を生成しています... :robot_face:", false, false)),
-			},
+		msg := inreply(event)
+		msg.Blocks = []slack.Block{
+			slack.NewContextBlock("", slack.NewTextBlockObject(slack.MarkdownType, "タイムラプス画像を生成しています... :robot_face:", false, false)),
 		}
 		if placeholder, err = client.PostMessage(ctx, msg); err != nil {
 			// TODO: こういうのがあるので、returnじゃなくてchanでログを管理するべき
@@ -160,7 +158,7 @@ func (cmd AmeshCommand) animated(
 		go cmd.uploadEntriesToStorage(context.Background(), entries, bname)
 	}
 
-	msg := service.SlackMsg{Channel: event.Channel}
+	msg := inreply(event)
 	msg.Blocks = append(msg.Blocks, slack.NewImageBlock(furl, datetime, "", nil))
 
 	if placeholder != nil {

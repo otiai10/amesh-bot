@@ -54,8 +54,9 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	fset.Parse(largo.Tokenize(event.Text)[2:])
 	words := fset.Rest()
 
+	msg := inreply(event)
 	if fset.HelpRequested() {
-		msg := service.SlackMsg{Channel: event.Channel, Text: "```" + help.String() + "```"}
+		msg.Text = "```" + help.String() + "```"
 		_, err := client.PostMessage(ctx, msg)
 		return err
 	}
@@ -83,8 +84,6 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	if err := json.NewDecoder(res.Body).Decode(result); err != nil {
 		return err
 	}
-
-	msg := service.SlackMsg{Channel: event.Channel}
 
 	if len(result.Items) == 0 {
 		msg.Blocks = append(msg.Blocks, cmd.notfoundMessageBlock(q))

@@ -68,7 +68,7 @@ func main() {
 	r.GET("/slack/oauth", c.OAuth)
 
 	// 画像フィルタリング
-	r.GET("/image", controllers.Image)
+	r.GET("/image", c.Image)
 
 	http.Handle("/", r)
 

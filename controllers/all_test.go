@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/otiai10/amesh-bot/service"
@@ -156,4 +157,40 @@ func TestController_Webhook(t *testing.T) {
 		req := httptest.NewRequest("POST", "/", bytes.NewBufferString(`{}`))
 		c.Webhook(rec, req)
 	})
+}
+
+func TestController_Image(t *testing.T) {
+	c := &Controller{Bot: &mockBot{}, Slack: &mockSlack{}, Datastore: &mockDatastore{}}
+
+	// See https://github.com/otiai10/amesh-bot/issues/5#issuecomment-899925373
+	pngurl := "https://user-images.githubusercontent.com/931554/129649261-ce9bd637-aaff-45ab-8a08-38e88144eb9b.png"
+	gifurl := "https://user-images.githubusercontent.com/931554/129650118-f7ef3792-79a9-49cc-81fd-25fefc421d50.gif"
+	jpgurl := "https://user-images.githubusercontent.com/931554/129650513-edee070f-7c23-4120-90b5-36541fe19567.jpg"
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/", nil)
+
+	q := url.Values{"url": []string{pngurl}}
+	req.URL.RawQuery = q.Encode()
+	c.Image(rec, req)
+	Expect(t, rec.Code).ToBe(http.StatusOK)
+
+	q.Set("url", gifurl)
+	req.URL.RawQuery = q.Encode()
+	rec = httptest.NewRecorder()
+	c.Image(rec, req)
+	Expect(t, rec.Code).ToBe(http.StatusOK)
+
+	q.Set("url", jpgurl)
+	req.URL.RawQuery = q.Encode()
+	rec = httptest.NewRecorder()
+	c.Image(rec, req)
+	Expect(t, rec.Code).ToBe(http.StatusOK)
+
+	txturl := "https://raw.githubusercontent.com/otiai10/amesh-bot/main/README.md"
+	q.Set("url", txturl)
+	req.URL.RawQuery = q.Encode()
+	rec = httptest.NewRecorder()
+	c.Image(rec, req)
+	Expect(t, rec.Code).ToBe(http.StatusInternalServerError)
 }

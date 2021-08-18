@@ -40,7 +40,7 @@ func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackCli
 	fset.BoolVar(&list, "list", false, "対応都市・観測所のリスト")
 	fset.Output = help
 
-	msg := service.SlackMsg{Channel: event.Channel}
+	msg := inreply(event)
 
 	if err := fset.Parse(largo.Tokenize(event.Text)[2:]); err != nil {
 		msg.Text = err.Error()

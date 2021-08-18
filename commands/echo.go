@@ -19,7 +19,7 @@ func (cmd EchoCommand) Match(event slackevents.AppMentionEvent) bool {
 }
 
 func (cmd EchoCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
-	msg := service.SlackMsg{Channel: event.Channel}
+	msg := inreply(event)
 	tokens := largo.Tokenize(event.Text)[1:]
 	msg.Text = strings.Join(tokens[1:], " ")
 	// スレッドの中での発言なら、スレッドに返す
