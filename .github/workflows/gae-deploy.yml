@@ -49,10 +49,11 @@ jobs:
     - name: Announce
       run: |
         curl -XPOST \
-          -d '{
-            "channel":"${{ secrets.AMESH_DEV_PROJECT_CHANNEL }}",
-            "text":"新しいバージョンがproduction環境にデプロイされました. https://github.com/otiai10/amesh-bot/commits/main"
-          }' \
+          -d "{
+            \"channel\": \"${{ secrets.AMESH_DEV_PROJECT_CHANNEL }}\",
+            \"text\": \":tada: 新しいバージョンがproduction環境にデプロイされました.\nhttps://github.com/${GITHUB_REPOSITORY}/commits/main\",
+            \"unfurl_links\": false
+          }" \
           -H "Authorization: Bearer ${{ secrets.AMESH_DEV_BOT_ACCESS_TOKEN }}" \
           -H "Content-Type: application/json" \
           https://slack.com/api/chat.postMessage
@@ -77,3 +78,13 @@ jobs:
         APP_SECRETS_DEV_YAML: ${{ secrets.APP_SECRETS_DEV_YAML }}
     - name: Deploy DEV
       run: gcloud app deploy ./app.dev.yaml --quiet
+    - name: Announce
+      run: |
+        curl -XPOST \
+          -d "{
+            \"channel\": \"${{ secrets.AMESH_DEV_PROJECT_CHANNEL }}\",
+            \"text\": \":robot_face: [DEV環境の自動更新]\nhttps://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\"
+          }" \
+          -H "Authorization: Bearer ${{ secrets.AMESH_DEV_BOT_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          https://slack.com/api/chat.postMessage
