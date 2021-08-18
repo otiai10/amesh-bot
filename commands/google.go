@@ -55,7 +55,7 @@ func (cmd GoogleCommand) Execute(ctx context.Context, client service.ISlackClien
 		return err
 	}
 
-	msg := service.SlackMsg{Channel: event.Channel}
+	msg := inreply(event)
 
 	if len(result.Items) == 0 {
 		q.Del("cx")

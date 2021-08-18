@@ -30,7 +30,7 @@ func (cmd LGTMCommand) Help() string {
 
 func (cmd LGTMCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error {
 	imgurl, err := cmd.Service.Random()
-	msg := service.SlackMsg{Channel: event.Channel}
+	msg := inreply(event)
 	if err != nil {
 		msg.Text = fmt.Sprintf("LGTM: %v", err.Error())
 	} else {
