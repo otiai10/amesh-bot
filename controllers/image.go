@@ -1,8 +1,13 @@
 package controllers
 
 import (
+	"bytes"
+	"context"
+	"fmt"
 	"image"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 
 	"image/gif"
@@ -23,6 +28,23 @@ func (c *Controller) Image(w http.ResponseWriter, req *http.Request) {
 	origin := req.URL.Query().Get("url")
 	filter := req.URL.Query().Get("filter")
 	levelstr := req.URL.Query().Get("level")
+
+	// {{{ キャッシュ画像存在確認
+	cachekey := req.URL.Query().Encode()
+	// FIXME: これはDI的にStorageから提供されるべきでは？
+	bname := os.Getenv("GOOGLE_STORAGE_BUCKET_NAME")
+	ctx := req.Context()
+	exists, err := c.Storage.Exists(ctx, bname, cachekey)
+	if err == nil && exists {
+		rc, err := c.Storage.Get(ctx, bname, cachekey)
+		if err == nil && rc != nil {
+			_, ecopy := io.Copy(w, rc)
+			eclose := rc.Close()
+			fmt.Printf("[DEBUG][CACHE] HIT: copy=%v, close=%v, key=%s\n", ecopy, eclose, cachekey) // TODO: Fix
+			return
+		}
+	}
+	// }}}
 
 	level := 60
 	if lv, err := strconv.Atoi(levelstr); err == nil {
@@ -75,5 +97,30 @@ func (c *Controller) Image(w http.ResponseWriter, req *http.Request) {
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+
+	// {{{ 以下、キャッシュとしてCloudStorageへ保存
+	go c.cacheFilteredImage(context.Background(), bname, cachekey, fmtname, dest)
+	// }}}
+}
+
+func (c *Controller) cacheFilteredImage(ctx context.Context, bname, cachekey, fmtname string, img image.Image) (err error) {
+	buf := bytes.NewBuffer(nil)
+	switch fmtname {
+	case "png":
+		err = png.Encode(buf, img)
+	case "gif":
+		err = gif.Encode(buf, img, nil)
+	case "jpeg":
+		err = jpeg.Encode(buf, img, nil)
+	}
+	if err != nil {
+		fmt.Printf("[ERROR] c.Image::cacheFilteredImage::encode %v", err)
+		return err
+	}
+	if err := c.Storage.Upload(ctx, bname, cachekey, buf.Bytes()); err != nil {
+		fmt.Printf("[ERROR] c.Image::cacheFilteredImage::upload %v", err)
+		return err
+	}
+	return nil
 
 }

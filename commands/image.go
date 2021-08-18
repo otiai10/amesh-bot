@@ -130,12 +130,13 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	// filterリクエストの場合は、自分の投稿に、unfilterなリンクを返す
 	if filter {
 		unfurl := false
-		_, err = client.PostMessage(ctx, service.SlackMsg{
-			Channel:         event.Channel,
-			ThreadTimestamp: sent.Timestamp,
-			Text:            ":warning: " + item.Link,
-			UnfurlMedia:     &unfurl,
-		})
+		msg := inreply(event)
+		if event.ThreadTimeStamp == "" { // imgコマンドが非スレッドの場合
+			msg.ThreadTimestamp = sent.Timestamp // 応答済み投稿を起点にスレッド開始
+		}
+		msg.Text = ":warning: " + item.Link
+		msg.UnfurlMedia = &unfurl
+		_, err = client.PostMessage(ctx, msg)
 	}
 	return err
 }
