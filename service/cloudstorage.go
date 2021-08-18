@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"cloud.google.com/go/storage"
 )
@@ -38,6 +39,19 @@ func (cs *Cloudstorage) Upload(ctx context.Context, bucket string, name string, 
 		return fmt.Errorf("failed to terminate cloud storage client: %v", err)
 	}
 	return nil
+}
+
+func (cs *Cloudstorage) Get(ctx context.Context, bucket, name string) (io.ReadCloser, error) {
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create storage client: %v", err)
+	}
+	defer client.Close()
+	rcer, err := client.Bucket(bucket).Object(name).NewReader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return rcer, nil
 }
 
 // URL ...

@@ -63,6 +63,7 @@ func main() {
 		Bot:       b,
 		Slack:     &service.SlackOAuthClient{},
 		Datastore: service.NewDatastore(os.Getenv("GOOGLE_PROJECT_ID")),
+		Storage:   &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"},
 	}
 	r.POST("/slack/webhook", c.Webhook)
 	r.GET("/slack/oauth", c.OAuth)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -26,6 +27,7 @@ type (
 		seterr error
 		geterr error
 	}
+	mockStorage struct{}
 )
 
 func (mb *mockBot) Handle(ctx context.Context, oauth service.OAuthResponse, event slackevents.AppMentionEvent) {
@@ -61,13 +63,26 @@ func (md *mockDatastore) Get(ctx context.Context, path string, dest interface{})
 	return nil
 }
 
+func (ms *mockStorage) Exists(ctx context.Context, bucket string, name string) (exists bool, err error) {
+	return false, nil
+}
+
+func (ms *mockStorage) Upload(ctx context.Context, bucket string, name string, contents []byte) error {
+	return nil
+}
+
+func (ms *mockStorage) Get(ctx context.Context, bucket, name string) (io.ReadCloser, error) {
+	return nil, nil
+}
+
 func TestController_OAuth(t *testing.T) {
 
 	bot := &mockBot{}
 	slack := &mockSlack{}
 	datastore := &mockDatastore{}
+	cloudstorage := &mockStorage{}
 
-	c := &Controller{Bot: bot, Slack: slack, Datastore: datastore}
+	c := &Controller{Bot: bot, Slack: slack, Datastore: datastore, Storage: cloudstorage}
 
 	s := httptest.NewServer(nil)
 	rec := httptest.NewRecorder()
@@ -118,7 +133,7 @@ func TestController_OAuth(t *testing.T) {
 }
 
 func TestController_Webhook(t *testing.T) {
-	c := &Controller{Bot: &mockBot{}, Slack: &mockSlack{}, Datastore: &mockDatastore{}}
+	c := &Controller{Bot: &mockBot{}, Slack: &mockSlack{}, Datastore: &mockDatastore{}, Storage: &mockStorage{}}
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/", bytes.NewBufferString(`{}`))
@@ -160,7 +175,7 @@ func TestController_Webhook(t *testing.T) {
 }
 
 func TestController_Image(t *testing.T) {
-	c := &Controller{Bot: &mockBot{}, Slack: &mockSlack{}, Datastore: &mockDatastore{}}
+	c := &Controller{Bot: &mockBot{}, Slack: &mockSlack{}, Datastore: &mockDatastore{}, Storage: &mockStorage{}}
 
 	// See https://github.com/otiai10/amesh-bot/issues/5#issuecomment-899925373
 	pngurl := "https://user-images.githubusercontent.com/931554/129649261-ce9bd637-aaff-45ab-8a08-38e88144eb9b.png"
