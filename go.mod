@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/storage v1.16.0
 	github.com/disintegration/gift v1.2.1
 	github.com/otiai10/amesh v1.2.7
-	github.com/otiai10/goapis v0.0.14
+    github.com/otiai10/goapis v0.0.0-20210823014810-4c2282115094
 	github.com/otiai10/ja v0.0.0-20210802063633-40ce46e41595
 	github.com/otiai10/jma v0.0.0-20210802024505-9b53b5ed5ed6
 	github.com/otiai10/largo v0.0.0-20210822152608-c0d36ac94e7f
