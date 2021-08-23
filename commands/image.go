@@ -18,6 +18,11 @@ import (
 	"github.com/slack-go/slack/slackevents"
 )
 
+type CommandCtxKey string
+
+const imageSearchMaxRetry = 3
+const imageSearchIntentCtxKey CommandCtxKey = "image_search_intent"
+
 type CustomSearchClient interface {
 	CustomSearch(url.Values) (*http.Response, error)
 }
@@ -61,20 +66,16 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 		return err
 	}
 
+	intent := RecoverIntent(ctx)
+
 	rand.Seed(time.Now().Unix())
 	query := strings.Join(words, "+")
-	q := url.Values{}
-	q.Add("q", query)
-	q.Add("num", "10")
-	q.Add("start", fmt.Sprintf("%d", 1+rand.Intn(10)))
-	if unsafe {
-		q.Add("safe", "off")
-	} else {
-		q.Add("safe", "active")
-	}
-	q.Add("searchType", "image")
+	intent.Add("q", query)
+	intent.Add("num", "10")
+	intent.Add("searchType", "image")
+	intent.Unsafe(unsafe)
 
-	res, err := cmd.Search.CustomSearch(q)
+	res, err := cmd.Search.CustomSearch(intent.Build())
 	if err != nil {
 		return err
 	}
@@ -86,9 +87,17 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	}
 
 	if len(result.Items) == 0 {
-		msg.Blocks = append(msg.Blocks, cmd.notfoundMessageBlock(q))
-		_, err = client.PostMessage(ctx, msg)
-		return err
+		fmt.Printf("[DEBUG] RETRY: %d\n", intent.Retry)
+		if intent.Retry > imageSearchMaxRetry {
+			msg.Blocks = append(msg.Blocks, cmd.notfoundMessageBlock(intent))
+			_, err = client.PostMessage(ctx, msg)
+			return err
+		} else {
+			intent.Retry = intent.Retry + 1
+			intent.Request = result.Queries.Request[0]
+			ctx = context.WithValue(ctx, imageSearchIntentCtxKey, intent)
+			return cmd.Execute(ctx, client, event)
+		}
 	}
 
 	index := rand.Intn(len(result.Items))
@@ -118,7 +127,7 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 		msg.Blocks = append(msg.Blocks, slack.NewContextBlock("",
 			slack.NewTextBlockObject(
 				slack.MarkdownType,
-				item.Image.ContextLink+"\n"+cmd.formatQueryMetadata(q),
+				item.Image.ContextLink+"\n"+cmd.formatQueryMetadata(intent),
 				false, false,
 			),
 		))
@@ -132,7 +141,7 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	}
 
 	// filterリクエストの場合は、自分の投稿に、unfilterなリンクを返す
-	if filter {
+	if filter || fset.Lookup("filter").Given() {
 		unfurl := false
 		msg := inreply(event)
 		if event.ThreadTimeStamp == "" { // imgコマンドが非スレッドの場合
@@ -150,16 +159,18 @@ func (cmd ImageCommand) Help() string {
 	return "画像検索コマンド\n```@amesh img|image {query}```"
 }
 
-func (cmd ImageCommand) notfoundMessageBlock(q url.Values) slack.Block {
+func (cmd ImageCommand) notfoundMessageBlock(intent *SearchIntent) slack.Block {
+	q := intent.Values
 	q.Del("cx")
 	q.Del("key")
-	text := ":neutral_face: 画像が見つかりませんでした: " + cmd.formatQueryMetadata(q)
+	text := ":neutral_face: 画像が見つかりませんでした: " + cmd.formatQueryMetadata(intent)
 	return slack.NewContextBlock("", slack.NewTextBlockObject(slack.MarkdownType, text, false, true))
 }
 
-func (cmd ImageCommand) formatQueryMetadata(q url.Values) string {
+func (cmd ImageCommand) formatQueryMetadata(intent *SearchIntent) string {
+	q := intent.Values
 	return fmt.Sprintf(
-		"q=%s, num=%s, start=%s, safe=%s",
-		q.Get("q"), q.Get("num"), q.Get("start"), q.Get("safe"),
+		"q=%s, num=%s, start=%s, safe=%s, retry=%d",
+		q.Get("q"), q.Get("num"), q.Get("start"), q.Get("safe"), intent.Retry,
 	)
 }
