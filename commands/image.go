@@ -141,7 +141,7 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	}
 
 	// filterリクエストの場合は、自分の投稿に、unfilterなリンクを返す
-	if filter || fset.Lookup("filter").Given() {
+	if filter || fset.Lookup("level").Given() {
 		unfurl := false
 		msg := inreply(event)
 		if event.ThreadTimeStamp == "" { // imgコマンドが非スレッドの場合
