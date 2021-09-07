@@ -6,10 +6,18 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/marmoset"
 	"github.com/slack-go/slack/slackevents"
+)
+
+var (
+	ReminderExpressions = []*regexp.Regexp{
+		regexp.MustCompile("^Reminder: +"),
+		regexp.MustCompile("^リマインダー : +"),
+	}
 )
 
 func (c *Controller) Webhook(w http.ResponseWriter, req *http.Request) {
@@ -52,10 +60,22 @@ func (c *Controller) Webhook(w http.ResponseWriter, req *http.Request) {
 		team.AccessToken = os.Getenv("DEV_SLACK_BOT_USER_OAUTH_TOKEN")
 	}
 
-	// TODO: BotがRequestの情報を参照できるよう、Contextに含める
+	payload.Event = cleanup(payload.Event)
+
 	ctx := context.WithValue(context.Background(), "webhook_request", req)
 	go c.Bot.Handle(ctx, team, payload.Event)
 
 	return
 
+}
+
+func cleanup(event slackevents.AppMentionEvent) slackevents.AppMentionEvent {
+	// Cleanup Reminder case
+	for _, exp := range ReminderExpressions {
+		if exp.MatchString(event.Text) {
+			event.Text = exp.ReplaceAllString(event.Text, "")
+			return event
+		}
+	}
+	return event
 }

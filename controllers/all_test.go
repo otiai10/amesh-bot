@@ -136,8 +136,12 @@ func TestController_Webhook(t *testing.T) {
 	c := &Controller{Bot: &mockBot{}, Slack: &mockSlack{}, Datastore: &mockDatastore{}, Storage: &mockStorage{}}
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/", bytes.NewBufferString(`{}`))
+	req := httptest.NewRequest("POST", "/", bytes.NewBufferString(`{"event":{"text": "Foo baa"}}`))
 
+	c.Webhook(rec, req)
+	Expect(t, rec.Code).ToBe(http.StatusAccepted)
+
+	req = httptest.NewRequest("POST", "/", bytes.NewBufferString(`{"event":{"text": "Reminder: foo baa"}}`))
 	c.Webhook(rec, req)
 	Expect(t, rec.Code).ToBe(http.StatusAccepted)
 
