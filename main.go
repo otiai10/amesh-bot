@@ -48,6 +48,7 @@ func main() {
 			commands.ForecastCommand{
 				SourceURL: "https://www.jma.go.jp/bosai/forecast", Timezone: timezone,
 			},
+			commands.TyphoonCommand{},
 			commands.GoogleCommand{Search: g},
 			commands.LGTMCommand{Service: service.LGTM{}},
 			commands.EchoCommand{},
