@@ -42,6 +42,7 @@ func (cmd ImageCommand) Match(event slackevents.AppMentionEvent) bool {
 }
 
 // Handle ...
+// TODO: slack-go/slack を使いましょうね.
 func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
 
 	help := bytes.NewBuffer(nil)
@@ -67,6 +68,11 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	}
 
 	intent := RecoverIntent(ctx)
+	if intent.Retry > imageSearchMaxRetry {
+		msg.Blocks = append(msg.Blocks, cmd.notfoundMessageBlock(intent))
+		_, err = client.PostMessage(ctx, msg)
+		return err
+	}
 
 	rand.Seed(time.Now().Unix())
 	query := strings.Join(words, "+")
@@ -87,17 +93,9 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	}
 
 	if len(result.Items) == 0 {
-		fmt.Printf("[DEBUG] RETRY: %d\n", intent.Retry)
-		if intent.Retry > imageSearchMaxRetry {
-			msg.Blocks = append(msg.Blocks, cmd.notfoundMessageBlock(intent))
-			_, err = client.PostMessage(ctx, msg)
-			return err
-		} else {
-			intent.Retry = intent.Retry + 1
-			intent.Request = result.Queries.Request[0]
-			ctx = context.WithValue(ctx, imageSearchIntentCtxKey, intent)
-			return cmd.Execute(ctx, client, event)
-		}
+		fmt.Printf("[DEBUG] RETRY for NOTFOUND: %d", intent.Retry)
+		ctx = IncrementRetryIntent(ctx, intent, result.Queries.Request[0])
+		return cmd.Execute(ctx, client, event)
 	}
 
 	index := rand.Intn(len(result.Items))
@@ -134,10 +132,10 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	}
 
 	sent, err := client.PostMessage(ctx, msg)
-	// FIXME: slack-imgs.comのproxy errorが出るとすればここだと思う
-
 	if err != nil {
-		return err
+		fmt.Printf("[DEBUG] RETRY for ERROR: %d", intent.Retry)
+		ctx = IncrementRetryIntent(ctx, intent, result.Queries.Request[0])
+		return cmd.Execute(ctx, client, event)
 	}
 
 	// filterリクエストの場合は、自分の投稿に、unfilterなリンクを返す
