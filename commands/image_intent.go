@@ -24,6 +24,12 @@ func RecoverIntent(ctx context.Context) *SearchIntent {
 	return &SearchIntent{Values: url.Values{}}
 }
 
+func IncrementRetryIntent(ctx context.Context, intent *SearchIntent, request google.CustomSearchRequest) context.Context {
+	intent.Retry = intent.Retry + 1
+	intent.Request = request
+	return context.WithValue(ctx, imageSearchIntentCtxKey, intent)
+}
+
 func (intent *SearchIntent) Unsafe(unsafe bool) {
 	if unsafe {
 		intent.Add("safe", "off")
