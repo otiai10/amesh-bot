@@ -95,8 +95,10 @@ func (c *SlackClient) PostMessage(ctx context.Context, msg interface{}) (*PostMe
 		return nil, err
 	}
 	if !response.Ok {
-		// TODO: Improve
-		return response, fmt.Errorf(response.Error)
+		// @see https://github.com/slack-go/slack/issues/939
+		buf := bytes.NewBuffer(nil)
+		json.NewEncoder(buf).Encode(response)
+		return response, fmt.Errorf("%s: %s", response.Error, buf.String())
 	}
 	return response, nil
 }

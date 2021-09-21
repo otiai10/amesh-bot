@@ -38,9 +38,11 @@ func (c *Controller) Image(w http.ResponseWriter, req *http.Request) {
 	if err == nil && exists {
 		rc, err := c.Storage.Get(ctx, bname, cachekey)
 		if err == nil && rc != nil {
-			_, ecopy := io.Copy(w, rc)
-			eclose := rc.Close()
-			fmt.Printf("[DEBUG][CACHE] HIT: copy=%v, close=%v, key=%s\n", ecopy, eclose, cachekey) // TODO: Fix
+			if _, err := io.Copy(w, rc); err != nil {
+				fmt.Println("[ERROR] io.Copy", err.Error())
+			} else if err := rc.Close(); err != nil {
+				fmt.Println("[ERROR] obj.Close", err.Error())
+			}
 			return
 		}
 	}
