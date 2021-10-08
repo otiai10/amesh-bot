@@ -81,9 +81,9 @@ type mockLGTM struct {
 	err    error
 }
 
-func (ml *mockLGTM) Random() (string, error) {
+func (ml *mockLGTM) Random() (string, string, error) {
 	if ml.err != nil {
-		return "", ml.err
+		return "", "", ml.err
 	}
-	return ml.imgurl, nil
+	return ml.imgurl, "![xx](zz)", nil
 }
