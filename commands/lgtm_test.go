@@ -21,7 +21,7 @@ func TestLGTMCommand_Match(t *testing.T) {
 func TestLGTMCommand_Help(t *testing.T) {
 	cmd := LGTMCommand{}
 	help := cmd.Help()
-	Expect(t, help).ToBe("lgtmコマンド\n```@amesh lgtm```")
+	Expect(t, help).ToBe("lgtmコマンド\n```@amesh lgtm [-markdown|-md]```")
 }
 
 func TestLGTMCommand_Execute(t *testing.T) {
