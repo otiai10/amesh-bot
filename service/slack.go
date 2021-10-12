@@ -134,8 +134,10 @@ func (c *SlackClient) DeleteMessage(ctx context.Context, msg interface{}) error 
 		return err
 	}
 	if !response.Ok {
-		// TODO: Improve
-		return fmt.Errorf(response.Error)
+		// @see https://github.com/slack-go/slack/issues/939
+		buf := bytes.NewBuffer(nil)
+		json.NewEncoder(buf).Encode(response)
+		return fmt.Errorf("%s: %s", response.Error, buf.String())
 	}
 	return nil
 
@@ -171,8 +173,10 @@ func (c *SlackClient) UpdateMessage(ctx context.Context, msg interface{}) error 
 		return err
 	}
 	if !response.Ok {
-		// TODO: Improve
-		return fmt.Errorf(response.Error)
+		// @see https://github.com/slack-go/slack/issues/939
+		buf := bytes.NewBuffer(nil)
+		json.NewEncoder(buf).Encode(response)
+		return fmt.Errorf("%s: %s", response.Error, buf.String())
 	}
 	return nil
 
