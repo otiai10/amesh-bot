@@ -164,6 +164,11 @@ func (cmd AmeshCommand) animated(
 	if placeholder != nil {
 		msg.Timestamp = placeholder.Timestamp
 		err = client.UpdateMessage(ctx, msg)
+		if err != nil {
+			msg := inreply(event)
+			msg.Text = ":robot_face: Something went wrong :broken_heart:"
+			client.UpdateMessage(ctx, msg)
+		}
 	} else {
 		_, err = client.PostMessage(ctx, msg)
 	}
