@@ -1,4 +1,4 @@
-runtime: go112
+runtime: go118
 env: standard
 
 # app-secrets should be created by a step in GitHub Actions.
