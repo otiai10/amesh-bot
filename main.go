@@ -57,8 +57,11 @@ func main() {
 			Storage:  &service.Cloudstorage{BaseURL: "https://storage.googleapis.com"},
 			Timezone: timezone,
 		},
-		NotFound: commands.NotFound{},
-		Logger:   lg.Logger("bot"),
+		NotFound: commands.AICompletion{
+			APIKey:  os.Getenv("OPENAI_APIKEY"),
+			BaseURL: "https://api.openai.com/v1",
+		}, // commands.NotFound{},
+		Logger: lg.Logger("bot"),
 	}
 	c := controllers.Controller{
 		Bot:       b,
