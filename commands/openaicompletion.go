@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/goapis/openai"
@@ -25,7 +26,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 	msg := inreply(event)
 	tokens := largo.Tokenize(event.Text)[1:]
 	ai := openai.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
-	res, err := ai.Ask(openai.Davinci, tokens)
+	res, err := ai.Ask(openai.Davinci, strings.Join(tokens, "\n"))
 	if err != nil {
 		nferr := NotFound{}.Execute(ctx, client, event)
 		return fmt.Errorf("openai.Ask failed with: %v (and NotFound Cmd error: %v)", err, nferr)

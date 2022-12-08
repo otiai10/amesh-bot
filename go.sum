@@ -189,8 +189,8 @@ github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95/go.mod h1:9qAhocn7zKJ
 github.com/otiai10/curr v1.0.0 h1:TJIWdbX0B+kpNagQrjgq8bCMrbhiuX73M2XwgtDMoOI=
 github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6j4vs=
 github.com/otiai10/gat v0.0.0-20210414142218-6cc5ed2c158d/go.mod h1:JKhjIehcKT4k6v7yvgMhq/ffRF4tE4dbn7mGv7aE8/g=
-github.com/otiai10/goapis v0.0.0-20221208103720-887359e17881 h1:lG35K93ka1dCZ0qoBKnFLtbQwjsquh4NFfF360RTcvM=
-github.com/otiai10/goapis v0.0.0-20221208103720-887359e17881/go.mod h1:ydcqNGdAZ81IEmPoujgwktC66537nylGSaSw7xUnpaM=
+github.com/otiai10/goapis v0.0.0-20221208151327-7ff3f7808ca3 h1:JQo9MRlvS1iU/vjQbU7hdN1McRiBZR0LfqWpbEFGjwk=
+github.com/otiai10/goapis v0.0.0-20221208151327-7ff3f7808ca3/go.mod h1:ydcqNGdAZ81IEmPoujgwktC66537nylGSaSw7xUnpaM=
 github.com/otiai10/ja v0.0.0-20210802063633-40ce46e41595 h1:5XfdjIIY11MAsVptU7uH7mVFRgCiiPA0YKU1xwzUlUw=
 github.com/otiai10/ja v0.0.0-20210802063633-40ce46e41595/go.mod h1:NX9O2dqZLO83eYssWhWHOwxYmSpHLPt4ctauBeM7hb4=
 github.com/otiai10/jma v0.0.0-20210802024505-9b53b5ed5ed6 h1:6wWR6x9PngtSCVEgP0BxIU5bkMFekPdrTD/iR8vNM9w=
