@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/otiai10/amesh-bot/service"
-	"github.com/otiai10/goapis/openai"
 	"github.com/otiai10/largo"
+	"github.com/otiai10/openaigo"
 	"github.com/slack-go/slack/slackevents"
 )
 
@@ -25,8 +25,12 @@ func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
 func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
 	msg := inreply(event)
 	tokens := largo.Tokenize(event.Text)[1:]
-	ai := openai.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
-	res, err := ai.Ask(openai.Davinci, strings.Join(tokens, "\n"))
+	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
+	res, err := ai.Completion(ctx, openaigo.CompletionRequestBody{
+		Prompt:    []string{strings.Join(tokens, "\n")},
+		Model:     "text-davinci-003",
+		MaxTokens: 1024,
+	})
 	if err != nil {
 		nferr := NotFound{}.Execute(ctx, client, event)
 		return fmt.Errorf("openai.Ask failed with: %v (and NotFound Cmd error: %v)", err, nferr)
