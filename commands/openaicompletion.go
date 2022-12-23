@@ -19,7 +19,7 @@ type AICompletion struct {
 
 // Match ...
 func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
-	return true
+	return strings.HasSuffix(event.Text, "<@") // Only replies to direct mentions.
 }
 
 func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
@@ -30,6 +30,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		Prompt:    []string{strings.Join(tokens, "\n")},
 		Model:     "text-davinci-003",
 		MaxTokens: 1024,
+		User:      event.Channel, // fmt.Sprintf("%s:%s", event.Channel, event.User),
 	})
 	if err != nil {
 		nferr := NotFound{}.Execute(ctx, client, event)
