@@ -59,7 +59,7 @@ func (b *Bot) handle(ctx context.Context, client service.ISlackClient, event sla
 		err := b.Default.Execute(ctx, client, event)
 		return errwrap(err, b.Default, event)
 	}
-	if b.NotFound != nil {
+	if b.NotFound != nil && b.NotFound.Match(event) {
 		err := b.NotFound.Execute(ctx, client, event)
 		return errwrap(err, "builtin:notfound", event)
 	}
