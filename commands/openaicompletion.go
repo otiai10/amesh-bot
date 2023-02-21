@@ -33,8 +33,10 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		User:      event.Channel, // fmt.Sprintf("%s:%s", event.Channel, event.User),
 	})
 	if err != nil {
-		nferr := NotFound{}.Execute(ctx, client, event)
-		return fmt.Errorf("openai.Ask failed with: %v (and NotFound Cmd error: %v)", err, nferr)
+		openaistatuspage := "https://status.openai.com/"
+		msg.Text = fmt.Sprintf(":pleading_face: %v", openaistatuspage)
+		_, foerr := client.PostMessage(ctx, msg)
+		return fmt.Errorf("openai.Ask failed with: %v (and error on failover: %v)", err, foerr)
 	}
 	if len(res.Choices) == 0 {
 		nferr := NotFound{}.Execute(ctx, client, event)
