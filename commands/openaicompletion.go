@@ -23,7 +23,7 @@ func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
 }
 
 func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
-	msg := inreply(event)
+	msg := inreply(event, true)
 	tokens := largo.Tokenize(event.Text)[1:]
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
 	res, err := ai.Completion(ctx, openaigo.CompletionRequestBody{
