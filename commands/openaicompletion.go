@@ -26,11 +26,14 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 	msg := inreply(event, true)
 	tokens := largo.Tokenize(event.Text)[1:]
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
-	res, err := ai.Completion(ctx, openaigo.CompletionRequestBody{
-		Prompt:    []string{strings.Join(tokens, "\n")},
-		Model:     "text-davinci-003",
+	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
+		Model: "gpt-3.5-turbo",
+		Messages: []openaigo.ChatMessage{
+			{Role: "user", Content: strings.Join(tokens, "\n")},
+		},
 		MaxTokens: 1024,
-		User:      event.Channel, // fmt.Sprintf("%s:%s", event.Channel, event.User),
+		User:      event.Channel,
+		// User: fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp), // TODO: Originatedか、Thread内かで変わるはず
 	})
 	if err != nil {
 		openaistatuspage := "https://status.openai.com/"
@@ -42,7 +45,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		nferr := NotFound{}.Execute(ctx, client, event)
 		return fmt.Errorf("openai.Ask returns zero choice (and NotFound Cmd error: %v)", nferr)
 	}
-	msg.Text = res.Choices[rand.Intn(len(res.Choices))].Text
+	msg.Text = res.Choices[rand.Intn(len(res.Choices))].Message.Content
 	_, err = client.PostMessage(ctx, msg)
 	return err
 }
