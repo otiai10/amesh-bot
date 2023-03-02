@@ -204,8 +204,8 @@ github.com/otiai10/mint v1.3.1/go.mod h1:/yxELlJQ0ufhjUwhshSj+wFjZ78CnZ48/1wtmBH
 github.com/otiai10/mint v1.3.2/go.mod h1:/yxELlJQ0ufhjUwhshSj+wFjZ78CnZ48/1wtmBH1OTc=
 github.com/otiai10/mint v1.4.1 h1:HOVBfKP1oXIc0wWo9hZ8JLdZtyCPWqjvmFDuVZ0yv2Y=
 github.com/otiai10/mint v1.4.1/go.mod h1:gifjb2MYOoULtKLqUAEILUG/9KONW6f7YsJ6vQLTlFI=
-github.com/otiai10/openaigo v0.2.0 h1:v1GjwgEuKtCrYFR3ST/w1ZQMhi8WeHbkyOG2XHZEm+8=
-github.com/otiai10/openaigo v0.2.0/go.mod h1:792bx6AWTS61weDi2EzKpHHnTF4eDMAlJ5GvAk/mgPg=
+github.com/otiai10/openaigo v1.0.0 h1:E4SoShWjMVltBAkM4/QsxGPhPKZlpKp0GSK6Ov1MSOg=
+github.com/otiai10/openaigo v1.0.0/go.mod h1:792bx6AWTS61weDi2EzKpHHnTF4eDMAlJ5GvAk/mgPg=
 github.com/otiai10/opengraph v1.1.3/go.mod h1:ZMbPcfiSRSsg3+yrWZCXrgYL6kEK4KpH4GG1iyIvEXs=
 github.com/pelletier/go-buffruneio v0.2.0/go.mod h1:JkE26KsDizTr40EUHkXVtNPvgGtbSNq5BcowyYOWdKo=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
