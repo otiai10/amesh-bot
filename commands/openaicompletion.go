@@ -32,8 +32,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 			{Role: "user", Content: strings.Join(tokens, "\n")},
 		},
 		MaxTokens: 1024,
-		User:      event.Channel,
-		// User: fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp), // TODO: Originatedか、Thread内かで変わるはず
+		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
 	})
 	if err != nil {
 		openaistatuspage := "https://status.openai.com/"
