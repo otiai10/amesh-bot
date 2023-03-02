@@ -1,9 +1,7 @@
 package commands
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -26,23 +24,19 @@ func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
 
 func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
 	msg := inreply(event, true)
-
-	help := bytes.NewBuffer(nil)
-	dump := false
-	fset := largo.NewFlagSet("ai chat", largo.ContinueOnError)
-	fset.BoolVar(&dump, "dump", false, "詳細情報を表示します").Alias("d")
-	fset.Parse(largo.Tokenize(event.Text[1:]))
-	fset.Output = help
-
-	tokens := fset.Rest()
+	tokens := largo.Tokenize(event.Text)[1:]
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
+	user := fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp)
+	if event.ThreadTimeStamp != "" {
+		user = fmt.Sprintf("%s:%s", event.Channel, event.ThreadTimeStamp)
+	}
 	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
 		Model: "gpt-3.5-turbo",
 		Messages: []openaigo.ChatMessage{
 			{Role: "user", Content: strings.Join(tokens, " ")},
 		},
 		MaxTokens: 1024,
-		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
+		User:      user,
 	})
 	if err != nil {
 		openaistatuspage := "https://status.openai.com/"
@@ -54,17 +48,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		nferr := NotFound{}.Execute(ctx, client, event)
 		return fmt.Errorf("openai.Ask returns zero choice (and NotFound Cmd error: %v)", nferr)
 	}
-	msg.Text = res.Choices[rand.Intn(len(res.Choices))].Message.Content
-
-	if dump {
-		buf := bytes.NewBuffer(nil)
-		enc := json.NewEncoder(buf)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(res); err != nil {
-			msg.Text += "\n[dump]\n```\n" + buf.String() + "\n```"
-		}
-	}
-
+	msg.Text = res.Choices[rand.Intn(len(res.Choices))].Message.Content + fmt.Sprintf(" [%s]", user)
 	_, err = client.PostMessage(ctx, msg)
 	return err
 }
