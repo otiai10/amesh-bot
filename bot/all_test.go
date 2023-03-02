@@ -8,6 +8,7 @@ import (
 	"cloud.google.com/go/logging"
 	"github.com/otiai10/amesh-bot/service"
 	m "github.com/otiai10/mint"
+	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 )
 
@@ -29,6 +30,10 @@ func (ms *mockSlack) PostMessage(ctx context.Context, msg interface{}) (*service
 
 func (ms *mockSlack) UpdateMessage(ctx context.Context, msg interface{}) error {
 	return nil
+}
+
+func (ms *mockSlack) GetChannelInfo(ctx context.Context, id string) (info slack.Channel, err error) {
+	return
 }
 
 type dummycommand struct {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/mint"
+	"github.com/slack-go/slack"
 )
 
 var (
@@ -60,6 +61,10 @@ func (sc *mockSlackClient) PostMessage(ctx context.Context, msg interface{}) (*s
 
 func (sc *mockSlackClient) UpdateMessage(ctx context.Context, msg interface{}) error {
 	return nil
+}
+
+func (sc *mockSlackClient) GetChannelInfo(ctx context.Context, id string) (info slack.Channel, err error) {
+	return
 }
 
 // Google
