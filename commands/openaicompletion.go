@@ -17,13 +17,47 @@ type AICompletion struct {
 	BaseURL string
 }
 
+var (
+	channelChatModeOnmemoryCache = map[string]string{}
+)
+
+func (cmd AICompletion) getChannelTopic(ctx context.Context, client service.ISlackClient, id string) (string, error) {
+	if val, ok := channelChatModeOnmemoryCache[id]; ok {
+		fmt.Println("[INFO] topic cache hit for channel id: " + id)
+		return val, nil
+	}
+	info, err := client.GetChannelInfo(ctx, id)
+	if err != nil {
+		return "", nil
+	}
+	channelChatModeOnmemoryCache[id] = info.Topic.Value
+	return info.Topic.Value, nil
+}
+
+func (cmd AICompletion) shouldForceThreadReply(ctx context.Context, client service.ISlackClient, channelID string) (bool, error) {
+	topic, err := cmd.getChannelTopic(ctx, client, channelID)
+	if err != nil {
+		return true, err
+	}
+	if strings.Contains(topic, "-amesh-chat-mode=flat") {
+		return false, nil
+	}
+	return true, nil
+}
+
 // Match ...
 func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
 	return strings.HasPrefix(event.Text, "<@") // Only replies to direct mentions.
 }
 
 func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
-	msg := inreply(event, true)
+
+	forceThreadReply, err := cmd.shouldForceThreadReply(ctx, client, event.Channel)
+	if err != nil {
+		return err
+	}
+	msg := inreply(event, forceThreadReply)
+
 	tokens := largo.Tokenize(event.Text)[1:]
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
 	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
@@ -32,8 +66,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 			{Role: "user", Content: strings.Join(tokens, "\n")},
 		},
 		MaxTokens: 1024,
-		User:      event.Channel,
-		// User: fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp), // TODO: Originatedか、Thread内かで変わるはず
+		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
 	})
 	if err != nil {
 		openaistatuspage := "https://status.openai.com/"
