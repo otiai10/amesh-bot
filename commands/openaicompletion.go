@@ -59,13 +59,33 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 	msg := inreply(event, forceThreadReply)
 
 	tokens := largo.Tokenize(event.Text)[1:]
+
+	messages := []openaigo.ChatMessage{}
+	// Thread内の会話なので、会話コンテキストを取得しにいく
+	if msg.ThreadTimestamp != "" {
+		myself := event.Text[len("<@"):strings.Index(event.Text, ">")]
+		fmt.Println("myself:", myself) // XXX:
+		history, err := client.GetThreadHistory(ctx, msg.Channel, msg.ThreadTimestamp)
+		if err != nil {
+			return fmt.Errorf("slack: failed to fetch thread history: %v", err)
+		}
+		for _, m := range history {
+			role := "user"
+			if m.User == myself {
+				role = "assistant"
+			}
+			messages = append(messages, openaigo.ChatMessage{Role: role, Content: m.Text})
+		}
+	} else {
+		messages = append(messages, openaigo.ChatMessage{Role: "user", Content: strings.Join(tokens, "\n")})
+	}
+	fmt.Printf("%+v\n", messages) // XXX:
+
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
 	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
-		Model: "gpt-3.5-turbo",
-		Messages: []openaigo.ChatMessage{
-			{Role: "user", Content: strings.Join(tokens, "\n")},
-		},
-		MaxTokens: 1024,
+		Model:     "gpt-3.5-turbo",
+		Messages:  messages,
+		MaxTokens: 2048,
 		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
 	})
 	if err != nil {
