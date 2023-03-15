@@ -106,8 +106,8 @@ func (c *SlackClient) PostMessage(ctx context.Context, msg interface{}) (*PostMe
 }
 
 func (c *SlackClient) GetThreadHistory(ctx context.Context, channel, thread string) ([]slack.Msg, error) {
-	api := slack.New(c.AccessToken)
-	api.GetConversationRepliesContext(ctx, &slack.GetConversationRepliesParameters{})
+	// api := slack.New(c.AccessToken)
+	// api.GetConversationRepliesContext(ctx, &slack.GetConversationRepliesParameters{})
 	query := url.Values{"channel": []string{channel}, "ts": []string{thread}}
 	req, err := http.NewRequest("GET", "https://slack.com/api/conversations.replies?"+query.Encode(), nil)
 	if err != nil {
