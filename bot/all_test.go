@@ -36,6 +36,10 @@ func (ms *mockSlack) GetChannelInfo(ctx context.Context, id string) (info slack.
 	return
 }
 
+func (ms *mockSlack) GetThreadHistory(ctx context.Context, channel, thread string) (a []slack.Msg, e error) {
+	return
+}
+
 type dummycommand struct {
 	err error
 }

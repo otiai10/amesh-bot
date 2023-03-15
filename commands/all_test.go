@@ -67,6 +67,10 @@ func (sc *mockSlackClient) GetChannelInfo(ctx context.Context, id string) (info 
 	return
 }
 
+func (sc *mockSlackClient) GetThreadHistory(ctx context.Context, channel, thread string) (a []slack.Msg, e error) {
+	return
+}
+
 // Google
 type mockGoogleClient struct {
 	mint.HTTPClientMock

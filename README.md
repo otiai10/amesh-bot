@@ -17,7 +17,7 @@
 # どうやって導入するの
 
 このボタンを押します。
-<a href="https://slack.com/oauth/v2/authorize?client_id=2752107225.1411158530390&scope=app_mentions:read,chat:write,channels:read&user_scope="><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcSet="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a> そしてこのボタンを押します。
+<a href="https://slack.com/oauth/v2/authorize?client_id=2752107225.1411158530390&scope=app_mentions:read,chat:write,channels:read,channels:history&user_scope="><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcSet="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a> そしてこのボタンを押します。
 <a href="https://github.com/sponsors/otiai10"><img width="145" alt="sponsor" src="https://user-images.githubusercontent.com/931554/119762444-b4cdac00-bee8-11eb-8eb9-88ba1b0211c4.png"></a>
 
 # 問い合わせ

@@ -24,6 +24,7 @@ type (
 		// DeleteMessage(ctx context.Context, msg interface{}) error
 		UpdateMessage(ctx context.Context, msg interface{}) error
 		GetChannelInfo(context.Context, string) (slack.Channel, error)
+		GetThreadHistory(ctx context.Context, channel, thread string) ([]slack.Msg, error)
 	}
 
 	SlackMsg struct {
@@ -102,6 +103,38 @@ func (c *SlackClient) PostMessage(ctx context.Context, msg interface{}) (*PostMe
 		return response, fmt.Errorf("%s: %s", response.Error, buf.String())
 	}
 	return response, nil
+}
+
+func (c *SlackClient) GetThreadHistory(ctx context.Context, channel, thread string) ([]slack.Msg, error) {
+	// api := slack.New(c.AccessToken)
+	// api.GetConversationRepliesContext(ctx, &slack.GetConversationRepliesParameters{})
+	query := url.Values{"channel": []string{channel}, "ts": []string{thread}}
+	req, err := http.NewRequest("GET", "https://slack.com/api/conversations.replies?"+query.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
+	req.Header.Set("Content-Type", "application/json")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		return nil, fmt.Errorf(res.Status)
+	}
+	response := struct {
+		slack.SlackResponse
+		Messages []slack.Msg `json:"messages"`
+	}{}
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+	if !response.SlackResponse.Ok {
+		// @see https://github.com/slack-go/slack/issues/939
+		return nil, fmt.Errorf("%s", response.Error)
+	}
+	return response.Messages, nil
 }
 
 // https://api.slack.com/methods/chat.delete

@@ -21,6 +21,11 @@ var (
 	channelChatModeOnmemoryCache = map[string]string{}
 )
 
+const (
+	mentionPrefix = "<@"
+	mentionSuffix = ">"
+)
+
 func (cmd AICompletion) getChannelTopic(ctx context.Context, client service.ISlackClient, id string) (string, error) {
 	if val, ok := channelChatModeOnmemoryCache[id]; ok {
 		fmt.Println("[INFO] topic cache hit for channel id: " + id)
@@ -47,7 +52,7 @@ func (cmd AICompletion) shouldForceThreadReply(ctx context.Context, client servi
 
 // Match ...
 func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
-	return strings.HasPrefix(event.Text, "<@") // Only replies to direct mentions.
+	return strings.HasPrefix(event.Text, mentionPrefix) // Only replies to direct mentions.
 }
 
 func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
@@ -59,13 +64,33 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 	msg := inreply(event, forceThreadReply)
 
 	tokens := largo.Tokenize(event.Text)[1:]
+
+	messages := []openaigo.ChatMessage{}
+	// Thread内の会話なので、会話コンテキストを取得しにいく
+	if event.ThreadTimeStamp != "" {
+		myself := event.Text[len(mentionPrefix):strings.Index(event.Text, mentionSuffix)]
+		myid := mentionPrefix + myself + mentionSuffix
+		history, err := client.GetThreadHistory(ctx, event.Channel, event.ThreadTimeStamp)
+		if err != nil {
+			return fmt.Errorf("slack: failed to fetch thread history: %v", err)
+		}
+		for _, m := range history {
+			role := "user"
+			if m.User == myself {
+				role = "assistant"
+			}
+			messages = append(messages, openaigo.ChatMessage{Role: role, Content: strings.ReplaceAll(m.Text, myid, "")})
+		}
+	} else {
+		messages = append(messages, openaigo.ChatMessage{Role: "user", Content: strings.Join(tokens, "\n")})
+	}
+	fmt.Printf("%+v\n", messages) // XXX:
+
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
 	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
-		Model: "gpt-3.5-turbo",
-		Messages: []openaigo.ChatMessage{
-			{Role: "user", Content: strings.Join(tokens, "\n")},
-		},
-		MaxTokens: 1024,
+		Model:     "gpt-3.5-turbo",
+		Messages:  messages,
+		MaxTokens: 2048,
 		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
 	})
 	if err != nil {
