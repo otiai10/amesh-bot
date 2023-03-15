@@ -21,6 +21,11 @@ var (
 	channelChatModeOnmemoryCache = map[string]string{}
 )
 
+const (
+	mentionPrefix = "<@"
+	mentionSuffix = ">"
+)
+
 func (cmd AICompletion) getChannelTopic(ctx context.Context, client service.ISlackClient, id string) (string, error) {
 	if val, ok := channelChatModeOnmemoryCache[id]; ok {
 		fmt.Println("[INFO] topic cache hit for channel id: " + id)
@@ -47,7 +52,7 @@ func (cmd AICompletion) shouldForceThreadReply(ctx context.Context, client servi
 
 // Match ...
 func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
-	return strings.HasPrefix(event.Text, "<@") // Only replies to direct mentions.
+	return strings.HasPrefix(event.Text, mentionPrefix) // Only replies to direct mentions.
 }
 
 func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
@@ -62,10 +67,10 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 
 	messages := []openaigo.ChatMessage{}
 	// Thread内の会話なので、会話コンテキストを取得しにいく
-	if msg.ThreadTimestamp != "" {
-		myself := event.Text[len("<@"):strings.Index(event.Text, ">")]
-		fmt.Println("myself:", myself) // XXX:
-		history, err := client.GetThreadHistory(ctx, msg.Channel, msg.ThreadTimestamp)
+	if event.ThreadTimeStamp != "" {
+		myself := event.Text[len(mentionPrefix):strings.Index(event.Text, mentionSuffix)]
+		myid := mentionPrefix + myself + mentionSuffix
+		history, err := client.GetThreadHistory(ctx, event.Channel, event.ThreadTimeStamp)
 		if err != nil {
 			return fmt.Errorf("slack: failed to fetch thread history: %v", err)
 		}
@@ -74,7 +79,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 			if m.User == myself {
 				role = "assistant"
 			}
-			messages = append(messages, openaigo.ChatMessage{Role: role, Content: m.Text})
+			messages = append(messages, openaigo.ChatMessage{Role: role, Content: strings.ReplaceAll(m.Text, myid, "")})
 		}
 	} else {
 		messages = append(messages, openaigo.ChatMessage{Role: "user", Content: strings.Join(tokens, "\n")})

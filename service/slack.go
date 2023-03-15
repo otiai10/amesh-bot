@@ -124,16 +124,15 @@ func (c *SlackClient) GetThreadHistory(ctx context.Context, channel, thread stri
 		return nil, fmt.Errorf(res.Status)
 	}
 	response := struct {
-		OK       bool
-		Messages []slack.Msg
+		slack.SlackResponse
+		Messages []slack.Msg `json:"messages"`
 	}{}
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		return nil, err
 	}
-	if !response.OK {
+	if !response.SlackResponse.Ok {
 		// @see https://github.com/slack-go/slack/issues/939
-		errres := slack.SlackResponse{}
-		return nil, fmt.Errorf("%s", errres.Error)
+		return nil, fmt.Errorf("%s", response.Error)
 	}
 	return response.Messages, nil
 }
