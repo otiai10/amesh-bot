@@ -24,7 +24,7 @@ var (
 const (
 	mentionPrefix    = "<@"
 	mentionSuffix    = ">"
-	openaiMaxContext = 2048 // 4096
+	openaiMaxContext = 2048
 	openaiPricingURL = "https://openai.com/pricing"
 	openaiStatusURL  = "https://status.openai.com/"
 )
@@ -77,7 +77,6 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		if err != nil {
 			return fmt.Errorf("slack: failed to fetch thread history: %v", err)
 		}
-		total := 0
 		for _, m := range history {
 			role := "user"
 			if m.User == myself {
@@ -85,10 +84,10 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 			}
 			cleaned := strings.ReplaceAll(m.Text, myid, "")
 			messages = append(messages, openaigo.ChatMessage{Role: role, Content: cleaned})
-			if total+len(cleaned) > openaiMaxContext {
-				total -= len(messages[1].Content)
-				messages = append(messages[:1], messages[1:]...)
-			}
+			// if total+len(cleaned) > openaiMaxContext {
+			// 	total -= len(messages[1].Content)
+			// 	messages = append(messages[:1], messages[1:]...)
+			// }
 		}
 	} else {
 		messages = append(messages, openaigo.ChatMessage{Role: "user", Content: strings.Join(tokens, "\n")})
@@ -96,9 +95,9 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
 	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
-		Model:     "gpt-3.5-turbo",
+		Model:     openaigo.GPT3_5Turbo,
 		Messages:  messages,
-		MaxTokens: openaiMaxContext * 2,
+		MaxTokens: openaiMaxContext,
 		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
 	})
 	if err != nil {
@@ -108,7 +107,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 			msg.Text = fmt.Sprintf(":pleading_face: %v", openaiStatusURL)
 		}
 		_, foerr := client.PostMessage(ctx, msg)
-		return fmt.Errorf("openai.Ask failed with: %v (and error on failover: %v)", err, foerr)
+		return fmt.Errorf("openai API failed with: %v (and error on failover: %v)", err, foerr)
 	}
 	if len(res.Choices) == 0 {
 		nferr := NotFound{}.Execute(ctx, client, event)
