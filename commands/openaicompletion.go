@@ -22,8 +22,11 @@ var (
 )
 
 const (
-	mentionPrefix = "<@"
-	mentionSuffix = ">"
+	mentionPrefix    = "<@"
+	mentionSuffix    = ">"
+	openaiMaxContext = 2048 // 4096
+	openaiPricingURL = "https://openai.com/pricing"
+	openaiStatusURL  = "https://status.openai.com/"
 )
 
 func (cmd AICompletion) getChannelTopic(ctx context.Context, client service.ISlackClient, id string) (string, error) {
@@ -74,28 +77,36 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		if err != nil {
 			return fmt.Errorf("slack: failed to fetch thread history: %v", err)
 		}
+		total := 0
 		for _, m := range history {
 			role := "user"
 			if m.User == myself {
 				role = "assistant"
 			}
-			messages = append(messages, openaigo.ChatMessage{Role: role, Content: strings.ReplaceAll(m.Text, myid, "")})
+			cleaned := strings.ReplaceAll(m.Text, myid, "")
+			messages = append(messages, openaigo.ChatMessage{Role: role, Content: cleaned})
+			if total+len(cleaned) > openaiMaxContext {
+				total -= len(messages[1].Content)
+				messages = append(messages[:1], messages[1:]...)
+			}
 		}
 	} else {
 		messages = append(messages, openaigo.ChatMessage{Role: "user", Content: strings.Join(tokens, "\n")})
 	}
-	fmt.Printf("%+v\n", messages) // XXX:
 
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
 	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
 		Model:     "gpt-3.5-turbo",
 		Messages:  messages,
-		MaxTokens: 2048,
+		MaxTokens: openaiMaxContext * 2,
 		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
 	})
 	if err != nil {
-		openaistatuspage := "https://status.openai.com/"
-		msg.Text = fmt.Sprintf(":pleading_face: %v", openaistatuspage)
+		if e, ok := err.(openaigo.APIError); ok {
+			msg.Text = fmt.Sprintf(":pleading_face: %s\n%v", e.Message, openaiPricingURL)
+		} else {
+			msg.Text = fmt.Sprintf(":pleading_face: %v", openaiStatusURL)
+		}
 		_, foerr := client.PostMessage(ctx, msg)
 		return fmt.Errorf("openai.Ask failed with: %v (and error on failover: %v)", err, foerr)
 	}
