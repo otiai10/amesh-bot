@@ -95,7 +95,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
 	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
-		Model:     openaigo.GPT3_5Turbo,
+		Model:     openaigo.GPT3_5Turbo_0613,
 		Messages:  messages,
 		MaxTokens: openaiMaxContext,
 		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),

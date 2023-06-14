@@ -14,7 +14,7 @@ require (
 	github.com/otiai10/largo v0.0.0-20210822152608-c0d36ac94e7f
 	github.com/otiai10/marmoset v0.4.0
 	github.com/otiai10/mint v1.4.1
-	github.com/otiai10/openaigo v1.0.1
+	github.com/otiai10/openaigo v1.1.1
 	github.com/slack-go/slack v0.9.3
 )
 
