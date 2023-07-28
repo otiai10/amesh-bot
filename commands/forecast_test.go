@@ -53,7 +53,7 @@ func TestForecastCommand_Execute(t *testing.T) {
 	msg := sc.messages[0]
 	Expect(t, msg.Blocks[0].BlockType()).ToBe(slack.MBTSection)
 	Expect(t, msg.Blocks[1].BlockType()).ToBe(slack.MBTContext)
-	Expect(t, len(msg.Blocks)).ToBe(1 + 9) // 東京地方、っていうタイトル + 9日分
+	Expect(t, len(msg.Blocks)).ToBe(1 + 8) // 東京地方、っていうタイトル + 9日分
 
 	day1 := msg.Blocks[1].(*slack.ContextBlock).ContextElements
 	d1_e0 := day1.Elements[0].(*slack.TextBlockObject)

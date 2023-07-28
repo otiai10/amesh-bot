@@ -10,7 +10,7 @@ require (
 	github.com/otiai10/amesh v1.2.7
 	github.com/otiai10/goapis v0.0.0-20221208151327-7ff3f7808ca3
 	github.com/otiai10/ja v0.0.0-20210802063633-40ce46e41595
-	github.com/otiai10/jma v0.0.0-20210802024505-9b53b5ed5ed6
+	github.com/otiai10/jma v1.0.1
 	github.com/otiai10/largo v0.0.0-20210822152608-c0d36ac94e7f
 	github.com/otiai10/marmoset v0.4.0
 	github.com/otiai10/mint v1.4.1
