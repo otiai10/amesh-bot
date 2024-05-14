@@ -68,7 +68,7 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 
 	tokens := largo.Tokenize(event.Text)[1:]
 
-	messages := []openaigo.ChatMessage{}
+	messages := []openaigo.Message{}
 	// Thread内の会話なので、会話コンテキストを取得しにいく
 	if event.ThreadTimeStamp != "" {
 		myself := event.Text[len(mentionPrefix):strings.Index(event.Text, mentionSuffix)]
@@ -83,19 +83,19 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 				role = "assistant"
 			}
 			cleaned := strings.ReplaceAll(m.Text, myid, "")
-			messages = append(messages, openaigo.ChatMessage{Role: role, Content: cleaned})
+			messages = append(messages, openaigo.Message{Role: role, Content: cleaned})
 			// if total+len(cleaned) > openaiMaxContext {
 			// 	total -= len(messages[1].Content)
 			// 	messages = append(messages[:1], messages[1:]...)
 			// }
 		}
 	} else {
-		messages = append(messages, openaigo.ChatMessage{Role: "user", Content: strings.Join(tokens, "\n")})
+		messages = append(messages, openaigo.Message{Role: "user", Content: strings.Join(tokens, "\n")})
 	}
 
 	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
-	res, err := ai.Chat(ctx, openaigo.ChatCompletionRequestBody{
-		Model:     openaigo.GPT3_5Turbo_0613,
+	res, err := ai.Chat(ctx, openaigo.ChatRequest{
+		Model:     openaigo.GPT4o,
 		Messages:  messages,
 		MaxTokens: openaiMaxContext,
 		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),

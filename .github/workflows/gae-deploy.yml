@@ -45,7 +45,7 @@ jobs:
       env:
         APP_SECRETS_YAML: ${{ secrets.APP_SECRETS_YAML }}
     - name: Deploy
-      run: gcloud app deploy ./app.yaml --quiet
+      run: gcloud app deploy ./app.yaml --no-cache --quiet
     - name: Announce
       run: |
         curl -XPOST \
@@ -78,7 +78,7 @@ jobs:
       env:
         APP_SECRETS_DEV_YAML: ${{ secrets.APP_SECRETS_DEV_YAML }}
     - name: Deploy DEV
-      run: gcloud app deploy ./app.dev.yaml --quiet
+      run: gcloud app deploy ./app.dev.yaml --no-cache --quiet
     - name: Announce
       run: |
         curl -XPOST \
