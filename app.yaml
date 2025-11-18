@@ -1,6 +1,9 @@
 runtime: go1.24
 env: standard
 
+automatic_scaling:
+  max_instances: 20
+
 # app-secrets should be created by a step in GitHub Actions.
 # See .github/workflows/gae-deploy.yml for more details.
 includes:

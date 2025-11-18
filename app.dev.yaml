@@ -1,6 +1,9 @@
 runtime: go1.24
 env: standard
 
+automatic_scaling:
+  max_instances: 20
+
 service: dev
 
 includes:
