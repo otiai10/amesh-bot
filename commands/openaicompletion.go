@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strings"
 
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/largo"
 	"github.com/otiai10/openaigo"
@@ -58,11 +59,11 @@ func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
 	return strings.HasPrefix(event.Text, mentionPrefix) // Only replies to direct mentions.
 }
 
-func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *bot.CommandError {
 
 	forceThreadReply, err := cmd.shouldForceThreadReply(ctx, client, event.Channel)
 	if err != nil {
-		return err
+		return commandError(err)
 	}
 	msg := inreply(event, forceThreadReply)
 
@@ -75,7 +76,10 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		myid := mentionPrefix + myself + mentionSuffix
 		history, err := client.GetThreadHistory(ctx, event.Channel, event.ThreadTimeStamp)
 		if err != nil {
-			return fmt.Errorf("slack: failed to fetch thread history: %v", err)
+			return commandErrorWithMessage(
+				fmt.Errorf("slack: failed to fetch thread history: %v", err),
+				":warning: スレッドの会話履歴を取得できませんでした。時間をおいて再試行してください。",
+			)
 		}
 		for _, m := range history {
 			role := "user"
@@ -101,21 +105,38 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
 	})
 	if err != nil {
+		text := fmt.Sprintf(":pleading_face: %v", openaiStatusURL)
 		if e, ok := err.(openaigo.APIError); ok {
-			msg.Text = fmt.Sprintf(":pleading_face: %s\n%v", e.Message, openaiPricingURL)
-		} else {
-			msg.Text = fmt.Sprintf(":pleading_face: %v", openaiStatusURL)
+			text = fmt.Sprintf(":pleading_face: %s\n%v", e.Message, openaiPricingURL)
 		}
-		_, foerr := client.PostMessage(ctx, msg)
-		return fmt.Errorf("openai API failed with: %v (and error on failover: %v)", err, foerr)
+		cerr := commandError(err)
+		if cerr != nil {
+			cerr.Message = text
+			if forceThreadReply && event.ThreadTimeStamp == "" {
+				cerr.ThreadTimestamp = event.TimeStamp
+			}
+		}
+		return cerr
 	}
 	if len(res.Choices) == 0 {
-		nferr := NotFound{}.Execute(ctx, client, event)
-		return fmt.Errorf("openai.Ask returns zero choice (and NotFound Cmd error: %v)", nferr)
+		cerr := commandErrorWithMessage(
+			fmt.Errorf("openai Chat returns zero choice"),
+			":warning: 返答を生成できませんでした。もう一度お試しください。",
+		)
+		if cerr != nil && forceThreadReply && event.ThreadTimeStamp == "" {
+			cerr.ThreadTimestamp = event.TimeStamp
+		}
+		return cerr
 	}
 	msg.Text = res.Choices[rand.Intn(len(res.Choices))].Message.Content
-	_, err = client.PostMessage(ctx, msg)
-	return err
+	if _, err := client.PostMessage(ctx, msg); err != nil {
+		cerr := commandError(err)
+		if cerr != nil && forceThreadReply && event.ThreadTimeStamp == "" {
+			cerr.ThreadTimestamp = event.TimeStamp
+		}
+		return cerr
+	}
+	return nil
 }
 
 func (cmd AICompletion) Help() string {

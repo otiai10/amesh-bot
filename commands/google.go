@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/goapis/google"
 	"github.com/otiai10/largo"
@@ -29,7 +30,7 @@ func (cmd GoogleCommand) Match(event slackevents.AppMentionEvent) bool {
 }
 
 // Handle ...
-func (cmd GoogleCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd GoogleCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *bot.CommandError {
 
 	safe := "active"
 	fset := largo.NewFlagSet("google", largo.ContinueOnError)
@@ -46,13 +47,13 @@ func (cmd GoogleCommand) Execute(ctx context.Context, client service.ISlackClien
 
 	res, err := cmd.Search.CustomSearch(q)
 	if err != nil {
-		return err
+		return commandError(err)
 	}
 	defer res.Body.Close()
 
 	result := new(google.CustomSearchResponse)
 	if err := json.NewDecoder(res.Body).Decode(result); err != nil {
-		return err
+		return commandError(err)
 	}
 
 	msg := inreply(event)
@@ -61,8 +62,10 @@ func (cmd GoogleCommand) Execute(ctx context.Context, client service.ISlackClien
 		q.Del("cx")
 		q.Del("key")
 		msg.Text = fmt.Sprintf("Not found for query: %v", q)
-		_, err = client.PostMessage(ctx, msg)
-		return err
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
+		return nil
 	}
 
 	index := rand.Intn(len(result.Items))
@@ -70,8 +73,10 @@ func (cmd GoogleCommand) Execute(ctx context.Context, client service.ISlackClien
 
 	msg.Text = fmt.Sprintf("> %s\n%s\n", query, item.Link)
 
-	_, err = client.PostMessage(ctx, msg)
-	return err
+	if _, err := client.PostMessage(ctx, msg); err != nil {
+		return commandError(err)
+	}
+	return nil
 }
 
 // Help ...

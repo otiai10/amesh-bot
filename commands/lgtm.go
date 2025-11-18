@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/largo"
 	"github.com/slack-go/slack"
@@ -29,8 +30,11 @@ func (cmd LGTMCommand) Help() string {
 	return "lgtmコマンド\n```@amesh lgtm [-markdown|-md]```"
 }
 
-func (cmd LGTMCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error {
+func (cmd LGTMCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *bot.CommandError {
 	imgurl, mrkdwn, err := cmd.Service.Random()
+	if err != nil {
+		return commandErrorWithMessage(err, ":warning: LGTM画像の取得に失敗しました。")
+	}
 	msg := inreply(event)
 
 	help := bytes.NewBuffer(nil)
@@ -43,8 +47,10 @@ func (cmd LGTMCommand) Execute(ctx context.Context, client service.ISlackClient,
 
 	if fset.HelpRequested() {
 		msg.Text = cmd.Help()
-		_, err = client.PostMessage(ctx, msg)
-		return err
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
+		return nil
 	}
 
 	msg.Blocks = append(msg.Blocks, slack.NewImageBlock(imgurl, "LGTM", "", nil))
@@ -54,6 +60,8 @@ func (cmd LGTMCommand) Execute(ctx context.Context, client service.ISlackClient,
 		)
 	}
 
-	_, err = client.PostMessage(ctx, msg)
-	return err
+	if _, err := client.PostMessage(ctx, msg); err != nil {
+		return commandError(err)
+	}
+	return nil
 }

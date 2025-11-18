@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	. "github.com/otiai10/mint"
@@ -17,6 +18,9 @@ func TestAmeshCommand_Match(t *testing.T) {
 }
 
 func TestAmeshCommand_Execute(t *testing.T) {
+	if os.Getenv("RUN_AMESH_COMMAND_TEST") == "" {
+		t.Skip("RUN_AMESH_COMMAND_TEST is not set; skipping network-dependent test")
+	}
 	ctx := context.Background()
 	str := &mockStorage{}
 	cmd := AmeshCommand{Storage: str, Timezone: timezone}

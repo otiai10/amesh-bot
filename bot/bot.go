@@ -12,7 +12,7 @@ import (
 type (
 	Command interface {
 		Match(event slackevents.AppMentionEvent) bool
-		Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error
+		Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *CommandError
 		Help() string
 	}
 	Logger interface {
@@ -41,27 +41,43 @@ func (b *Bot) Handle(ctx context.Context, team service.OAuthResponse, event slac
 	// }
 
 	if cmderr := b.handle(ctx, client, event); cmderr != nil {
+		b.sendErrorMessage(ctx, client, event, cmderr)
 		b.Logger.Log(logging.Entry{Severity: logging.Error, Payload: cmderr, Labels: cmderr.labels()})
 	}
 }
 
 func (b *Bot) handle(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *CommandError {
 	if tokens := largo.Tokenize(event.Text)[1:]; len(tokens) != 0 && tokens[0] == "help" {
-		return errwrap(b.Help(ctx, client, event), "builtin:help", event)
+		return wrapWithContext(b.Help(ctx, client, event), "builtin:help", event)
 	}
 	for _, cmd := range b.Commands {
 		if cmd.Match(event) {
-			err := cmd.Execute(ctx, client, event)
-			return errwrap(err, cmd, event)
+			return wrapWithContext(cmd.Execute(ctx, client, event), cmd, event)
 		}
 	}
 	if b.Default != nil && b.Default.Match(event) {
-		err := b.Default.Execute(ctx, client, event)
-		return errwrap(err, b.Default, event)
+		return wrapWithContext(b.Default.Execute(ctx, client, event), b.Default, event)
 	}
 	if b.NotFound != nil && b.NotFound.Match(event) {
-		err := b.NotFound.Execute(ctx, client, event)
-		return errwrap(err, "builtin:notfound", event)
+		return wrapWithContext(b.NotFound.Execute(ctx, client, event), "builtin:notfound", event)
 	}
 	return nil
+}
+
+func (b *Bot) sendErrorMessage(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent, cmderr *CommandError) {
+	if cmderr == nil || cmderr.Message == "" {
+		return
+	}
+	msg := service.SlackMsg{Channel: event.Channel, Text: cmderr.Message}
+	if cmderr.ThreadTimestamp != "" {
+		msg.ThreadTimestamp = cmderr.ThreadTimestamp
+	} else if event.ThreadTimeStamp != "" {
+		msg.ThreadTimestamp = event.ThreadTimeStamp
+	}
+	if _, err := client.PostMessage(ctx, msg); err != nil {
+		b.Logger.Log(logging.Entry{Severity: logging.Critical, Payload: map[string]string{
+			"error":   err.Error(),
+			"context": "failed to reply error message",
+		}})
+	}
 }
