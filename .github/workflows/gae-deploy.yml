@@ -12,10 +12,10 @@ jobs:
     env:
       GO111MODULE: "on"
     steps:
-    - name: Set up Go 1.25
+    - name: Set up Go 1.24
       uses: actions/setup-go@v6
       with:
-        go-version: '1.25'
+        go-version: '1.24'
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
     - name: Get dependencies
@@ -31,10 +31,10 @@ jobs:
     needs: [validate]
     runs-on: ubuntu-latest
     steps:
-    - name: Set up Go 1.25
+    - name: Set up Go 1.24
       uses: actions/setup-go@v6
       with:
-        go-version: '1.25'
+        go-version: '1.24'
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
     - name: Auth GCP
@@ -68,10 +68,10 @@ jobs:
     needs: [validate]
     runs-on: ubuntu-latest
     steps:
-    - name: Set up Go 1.25
+    - name: Set up Go 1.24
       uses: actions/setup-go@v6
       with:
-        go-version: '1.25'
+        go-version: '1.24'
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
     - name: Auth GCP
