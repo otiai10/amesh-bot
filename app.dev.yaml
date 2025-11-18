@@ -1,4 +1,4 @@
-runtime: go
+runtime: go1.24
 env: standard
 
 service: dev
