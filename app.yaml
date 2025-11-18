@@ -1,4 +1,4 @@
-runtime: go1.24
+runtime: go1.25
 env: standard
 
 automatic_scaling:
