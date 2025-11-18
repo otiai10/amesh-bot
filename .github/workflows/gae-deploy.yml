@@ -13,11 +13,11 @@ jobs:
       GO111MODULE: "on"
     steps:
     - name: Set up Go 1.24
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: '1.24'
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Get dependencies
       run: go get -v -t -d ./...
     - name: Build
@@ -32,13 +32,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Auth GCP
-      uses: google-github-actions/auth@v1
+      uses: google-github-actions/auth@v3
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+      uses: google-github-actions/setup-gcloud@v3
     - name: Recover App Secrets
       run: 'echo "$APP_SECRETS_YAML" > app-secrets.yaml'
       shell: bash
@@ -65,13 +65,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Auth GCP
-      uses: google-github-actions/auth@v1
+      uses: google-github-actions/auth@v3
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+      uses: google-github-actions/setup-gcloud@v3
     - name: Recover App Secrets DEV
       run: 'echo "$APP_SECRETS_DEV_YAML" > app-secrets.dev.yaml'
       shell: bash
