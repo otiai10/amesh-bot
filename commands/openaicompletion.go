@@ -75,6 +75,8 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		return commandError(err)
 	}
 	msg := inreply(event, forceThreadReply)
+	markdown := true
+	msg.Mrkdwn = &markdown
 
 	tokens := largo.Tokenize(event.Text)[1:]
 

@@ -34,6 +34,7 @@ type (
 		Timestamp       string        `json:"ts,omitempty"`
 		ThreadTimestamp string        `json:"thread_ts,omitempty"`
 		UnfurlMedia     *bool         `json:"unfurl_media,omitempty"`
+		Mrkdwn          *bool         `json:"mrkdwn,omitempty"`
 		// UnfurlLinks  *bool         `json:"unfurl_links,omitempty"`
 	}
 
