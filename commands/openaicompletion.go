@@ -2,13 +2,17 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"math/rand"
 	"strings"
 
+	openai "github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/responses"
+	"github.com/openai/openai-go/shared"
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/largo"
-	"github.com/otiai10/openaigo"
 	"github.com/slack-go/slack/slackevents"
 )
 
@@ -24,9 +28,15 @@ var (
 const (
 	mentionPrefix    = "<@"
 	mentionSuffix    = ">"
-	openaiMaxContext = 2048
 	openaiPricingURL = "https://openai.com/pricing"
 	openaiStatusURL  = "https://status.openai.com/"
+
+	// GPT-4o Responses API out max tokens documented as ~16k output tokens.
+	// https://openai.com/blog/gpt-4o-mini-advancing-cost-efficient-intelligence
+	openaiMaxContext = int64(16000)
+	// GPT-5 model ID per OpenAI "Introducing GPT-5" (2025-08-07).
+	// https://openai.com/index/introducing-gpt-5
+	openaiDefaultModel = "gpt-5"
 )
 
 func (cmd AICompletion) getChannelTopic(ctx context.Context, client service.ISlackClient, id string) (string, error) {
@@ -58,64 +68,105 @@ func (cmd AICompletion) Match(event slackevents.AppMentionEvent) bool {
 	return strings.HasPrefix(event.Text, mentionPrefix) // Only replies to direct mentions.
 }
 
-func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *bot.CommandError {
 
 	forceThreadReply, err := cmd.shouldForceThreadReply(ctx, client, event.Channel)
 	if err != nil {
-		return err
+		return commandError(err)
 	}
 	msg := inreply(event, forceThreadReply)
+	markdown := true
+	msg.Mrkdwn = &markdown
 
 	tokens := largo.Tokenize(event.Text)[1:]
 
-	messages := []openaigo.Message{}
+	inputItems := []responses.ResponseInputItemUnionParam{}
 	// Thread内の会話なので、会話コンテキストを取得しにいく
 	if event.ThreadTimeStamp != "" {
 		myself := event.Text[len(mentionPrefix):strings.Index(event.Text, mentionSuffix)]
 		myid := mentionPrefix + myself + mentionSuffix
 		history, err := client.GetThreadHistory(ctx, event.Channel, event.ThreadTimeStamp)
 		if err != nil {
-			return fmt.Errorf("slack: failed to fetch thread history: %v", err)
+			return commandErrorWithMessage(
+				fmt.Errorf("slack: failed to fetch thread history: %v", err),
+				":warning: スレッドの会話履歴を取得できませんでした。時間をおいて再試行してください。",
+			)
 		}
 		for _, m := range history {
-			role := "user"
+			role := responses.EasyInputMessageRoleUser
 			if m.User == myself {
-				role = "assistant"
+				role = responses.EasyInputMessageRoleAssistant
 			}
-			cleaned := strings.ReplaceAll(m.Text, myid, "")
-			messages = append(messages, openaigo.Message{Role: role, Content: cleaned})
-			// if total+len(cleaned) > openaiMaxContext {
-			// 	total -= len(messages[1].Content)
-			// 	messages = append(messages[:1], messages[1:]...)
-			// }
+			cleaned := strings.TrimSpace(strings.ReplaceAll(m.Text, myid, ""))
+			if cleaned == "" {
+				continue
+			}
+			inputItems = append(inputItems, responses.ResponseInputItemParamOfMessage(cleaned, role))
 		}
 	} else {
-		messages = append(messages, openaigo.Message{Role: "user", Content: strings.Join(tokens, "\n")})
+		prompt := strings.TrimSpace(strings.Join(tokens, "\n"))
+		if prompt != "" {
+			inputItems = append(inputItems, responses.ResponseInputItemParamOfMessage(prompt, responses.EasyInputMessageRoleUser))
+		}
+	}
+	if len(inputItems) == 0 {
+		return commandErrorWithMessage(
+			fmt.Errorf("openai: no valid content to send"),
+			":warning: 送信するテキストが見つかりませんでした。メッセージ内容を含めてメンションしてください。",
+		)
 	}
 
-	ai := &openaigo.Client{APIKey: cmd.APIKey, BaseURL: cmd.BaseURL}
-	res, err := ai.Chat(ctx, openaigo.ChatRequest{
-		Model:     openaigo.GPT4o,
-		Messages:  messages,
-		MaxTokens: openaiMaxContext,
-		User:      fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp),
+	options := []option.RequestOption{}
+	if cmd.APIKey != "" {
+		options = append(options, option.WithAPIKey(cmd.APIKey))
+	}
+	if cmd.BaseURL != "" {
+		options = append(options, option.WithBaseURL(cmd.BaseURL))
+	}
+	ai := openai.NewClient(options...)
+	res, err := ai.Responses.New(ctx, responses.ResponseNewParams{
+		Model: shared.ResponsesModel(openaiDefaultModel),
+		Input: responses.ResponseNewParamsInputUnion{
+			OfInputItemList: responses.ResponseInputParam(inputItems),
+		},
+		MaxOutputTokens: openai.Int(openaiMaxContext),
+		User:            openai.String(fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp)),
 	})
 	if err != nil {
-		if e, ok := err.(openaigo.APIError); ok {
-			msg.Text = fmt.Sprintf(":pleading_face: %s\n%v", e.Message, openaiPricingURL)
-		} else {
-			msg.Text = fmt.Sprintf(":pleading_face: %v", openaiStatusURL)
+		text := fmt.Sprintf(":pleading_face: %v", openaiStatusURL)
+		var apierr *openai.Error
+		if errors.As(err, &apierr) && apierr.Message != "" {
+			text = fmt.Sprintf(":pleading_face: %s\n%v", apierr.Message, openaiPricingURL)
 		}
-		_, foerr := client.PostMessage(ctx, msg)
-		return fmt.Errorf("openai API failed with: %v (and error on failover: %v)", err, foerr)
+		cerr := commandError(err)
+		if cerr != nil {
+			cerr.Message = text
+			if forceThreadReply && event.ThreadTimeStamp == "" {
+				cerr.ThreadTimestamp = event.TimeStamp
+			}
+		}
+		return cerr
 	}
-	if len(res.Choices) == 0 {
-		nferr := NotFound{}.Execute(ctx, client, event)
-		return fmt.Errorf("openai.Ask returns zero choice (and NotFound Cmd error: %v)", nferr)
+	output := strings.TrimSpace(res.OutputText())
+	if output == "" {
+		cerr := commandErrorWithMessage(
+			fmt.Errorf("openai Responses returned empty output"),
+			":warning: 返答を生成できませんでした。もう一度お試しください。",
+		)
+		if cerr != nil && forceThreadReply && event.ThreadTimeStamp == "" {
+			cerr.ThreadTimestamp = event.TimeStamp
+		}
+		return cerr
 	}
-	msg.Text = res.Choices[rand.Intn(len(res.Choices))].Message.Content
-	_, err = client.PostMessage(ctx, msg)
-	return err
+	msg.Text = output
+	if _, err := client.PostMessage(ctx, msg); err != nil {
+		cerr := commandError(err)
+		if cerr != nil && forceThreadReply && event.ThreadTimeStamp == "" {
+			cerr.ThreadTimestamp = event.TimeStamp
+		}
+		return cerr
+	}
+	return nil
 }
 
 func (cmd AICompletion) Help() string {

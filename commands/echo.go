@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/largo"
 	"github.com/slack-go/slack/slackevents"
@@ -18,14 +19,16 @@ func (cmd EchoCommand) Match(event slackevents.AppMentionEvent) bool {
 	return len(tokens) > 1 && tokens[1] == "echo"
 }
 
-func (cmd EchoCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd EchoCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *bot.CommandError {
 	msg := inreply(event)
 	tokens := largo.Tokenize(event.Text)[1:]
 	msg.Text = strings.Join(tokens[1:], " ")
 	// スレッドの中での発言なら、スレッドに返す
 	msg.ThreadTimestamp = event.ThreadTimeStamp
-	_, err = client.PostMessage(ctx, msg)
-	return err
+	if _, err := client.PostMessage(ctx, msg); err != nil {
+		return commandError(err)
+	}
+	return nil
 }
 
 func (cmd EchoCommand) Help() string {

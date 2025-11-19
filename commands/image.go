@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/goapis/google"
 	"github.com/otiai10/largo"
@@ -43,7 +44,7 @@ func (cmd ImageCommand) Match(event slackevents.AppMentionEvent) bool {
 
 // Handle ...
 // TODO: slack-go/slack を使いましょうね.
-func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *bot.CommandError {
 
 	help := bytes.NewBuffer(nil)
 	unsafe := false
@@ -63,15 +64,19 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 	msg := inreply(event)
 	if fset.HelpRequested() {
 		msg.Text = "```" + help.String() + "```"
-		_, err := client.PostMessage(ctx, msg)
-		return err
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
+		return nil
 	}
 
 	intent := RecoverIntent(ctx)
 	if intent.Retry > imageSearchMaxRetry {
 		msg.Blocks = append(msg.Blocks, cmd.notfoundMessageBlock(intent))
-		_, err = client.PostMessage(ctx, msg)
-		return err
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
+		return nil
 	}
 
 	rand.Seed(time.Now().Unix())
@@ -83,13 +88,13 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 
 	res, err := cmd.Search.CustomSearch(intent.Build())
 	if err != nil {
-		return err
+		return commandError(err)
 	}
 	defer res.Body.Close()
 
 	result := new(google.CustomSearchResponse)
 	if err := json.NewDecoder(res.Body).Decode(result); err != nil {
-		return err
+		return commandError(err)
 	}
 
 	if len(result.Items) == 0 {
@@ -147,9 +152,11 @@ func (cmd ImageCommand) Execute(ctx context.Context, client service.ISlackClient
 		}
 		msg.Text = ":warning: " + item.Link
 		msg.UnfurlMedia = &unfurl
-		_, err = client.PostMessage(ctx, msg)
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
 	}
-	return err
+	return nil
 }
 
 // Help ...

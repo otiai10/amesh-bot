@@ -12,13 +12,13 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - name: Setup Go
-      uses: actions/setup-go@v3
+    - name: Setup Go 1.24
+      uses: actions/setup-go@v6
       with:
-        go-version: 1.18
+        go-version: '1.24'
       id: go
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Get dependencies
       run: go get -v -t -d ./...
     - name: Build
@@ -26,6 +26,6 @@ jobs:
     - name: Test
       run: go test ./... -v -cover -race -coverprofile=coverage -covermode=atomic
     - name: Upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         file: ./coverage

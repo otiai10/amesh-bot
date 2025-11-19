@@ -37,6 +37,6 @@ func TestLGTMCommand_Execute(t *testing.T) {
 		cmd.Service = &mockLGTM{err: fmt.Errorf("foo baa")}
 		sc := &mockSlackClient{}
 		err := cmd.Execute(ctx, sc, slackevents.AppMentionEvent{Text: "@amesh lgtm"})
-		Expect(t, err).ToBe(nil)
+		Expect(t, err).Not().ToBe(nil)
 	})
 }

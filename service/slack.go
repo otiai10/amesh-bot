@@ -34,6 +34,7 @@ type (
 		Timestamp       string        `json:"ts,omitempty"`
 		ThreadTimestamp string        `json:"thread_ts,omitempty"`
 		UnfurlMedia     *bool         `json:"unfurl_media,omitempty"`
+		Mrkdwn          *bool         `json:"mrkdwn,omitempty"`
 		// UnfurlLinks  *bool         `json:"unfurl_links,omitempty"`
 	}
 
@@ -89,7 +90,7 @@ func (c *SlackClient) PostMessage(ctx context.Context, msg interface{}) (*PostMe
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf(res.Status)
+		return nil, fmt.Errorf("%s", res.Status)
 	}
 
 	response := &PostMessageResponse{}
@@ -121,7 +122,7 @@ func (c *SlackClient) GetThreadHistory(ctx context.Context, channel, thread stri
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf(res.Status)
+		return nil, fmt.Errorf("%s", res.Status)
 	}
 	response := struct {
 		slack.SlackResponse
@@ -160,7 +161,7 @@ func (c *SlackClient) DeleteMessage(ctx context.Context, msg interface{}) error 
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return fmt.Errorf(res.Status)
+		return fmt.Errorf("%s", res.Status)
 	}
 
 	response := &slack.SlackResponse{}
@@ -199,7 +200,7 @@ func (c *SlackClient) UpdateMessage(ctx context.Context, msg interface{}) error 
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return fmt.Errorf(res.Status)
+		return fmt.Errorf("%s", res.Status)
 	}
 
 	response := &slack.SlackResponse{}
@@ -231,7 +232,7 @@ func (c *SlackClient) GetChannelInfo(ctx context.Context, id string) (info slack
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return info, fmt.Errorf(res.Status)
+		return info, fmt.Errorf("%s", res.Status)
 	}
 
 	response := struct {

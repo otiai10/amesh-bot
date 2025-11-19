@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/amesh/lib/amesh"
 	"github.com/otiai10/largo"
@@ -50,7 +51,7 @@ func (cmd AmeshCommand) Match(event slackevents.AppMentionEvent) bool {
 	return len(fset.Rest()) == 0
 }
 
-func (cmd AmeshCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) (err error) {
+func (cmd AmeshCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *bot.CommandError {
 
 	var animated bool
 	help := bytes.NewBuffer(nil)
@@ -58,7 +59,10 @@ func (cmd AmeshCommand) Execute(ctx context.Context, client service.ISlackClient
 
 	tokens := strings.Fields(event.Text)[1:]
 	if err := fset.Parse(tokens); err != nil {
-		return fmt.Errorf("failed to parse arguments: %v", err)
+		return commandErrorWithMessage(
+			fmt.Errorf("failed to parse arguments: %v", err),
+			":warning: オプションの解析に失敗しました。`@amesh -h` を参照してください。",
+		)
 	}
 
 	now := time.Now().In(cmd.Timezone)
@@ -67,12 +71,20 @@ func (cmd AmeshCommand) Execute(ctx context.Context, client service.ISlackClient
 	case fset.HelpRequested():
 		msg := inreply(event)
 		msg.Text = fmt.Sprintf("デフォルトのアメッシュコマンド\n```@amesh [-a] [-h]\n%v```", help.String())
-		_, err = client.PostMessage(ctx, msg)
-		return err
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
+		return nil
 	case animated:
-		return cmd.animated(ctx, client, event, now)
+		if err := cmd.animated(ctx, client, event, now); err != nil {
+			return commandError(err)
+		}
+		return nil
 	default:
-		return cmd.snapshot(ctx, client, event, now)
+		if err := cmd.snapshot(ctx, client, event, now); err != nil {
+			return commandError(err)
+		}
+		return nil
 	}
 }
 

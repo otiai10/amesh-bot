@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/otiai10/amesh-bot/bot"
 	"github.com/otiai10/amesh-bot/service"
 	"github.com/otiai10/ja"
 	"github.com/otiai10/jma"
@@ -32,7 +33,7 @@ func (cmd ForecastCommand) Match(event slackevents.AppMentionEvent) bool {
 	return false
 }
 
-func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error {
+func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *bot.CommandError {
 	city := "tokyo"
 	list := false
 	help := bytes.NewBuffer(nil)
@@ -44,22 +45,28 @@ func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackCli
 
 	if err := fset.Parse(largo.Tokenize(event.Text)[2:]); err != nil {
 		msg.Text = err.Error()
-		_, err = client.PostMessage(ctx, msg)
-		return err
+		if _, postErr := client.PostMessage(ctx, msg); postErr != nil {
+			return commandError(postErr)
+		}
+		return nil
 	}
 
 	if fset.HelpRequested() {
 		msg.Text = fmt.Sprintf("天気予報コマンド\n```@amesh forecast {都市の名前=tokyo} [-list]\n%v```", help.String())
-		_, err := client.PostMessage(ctx, msg)
-		return err
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
+		return nil
 	}
 
 	if list {
 		for _, o := range jma.Offices {
 			msg.Text += fmt.Sprintf("%v %v\n", o.NameEnLower, o.OfficeName)
 		}
-		_, err := client.PostMessage(ctx, msg)
-		return err
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
+		return nil
 	}
 
 	if rest := fset.Rest(); len(rest) > 0 {
@@ -69,8 +76,10 @@ func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackCli
 	areas := jma.SearchOffice(city)
 	if len(areas) == 0 {
 		msg.Text = fmt.Sprintf("クエリ「%s」に対する観測所を発見できませんでした.\n以下のコマンドを試してください.\n```@amesh forecast -list```\n", city)
-		_, err := client.PostMessage(ctx, msg)
-		return err
+		if _, err := client.PostMessage(ctx, msg); err != nil {
+			return commandError(err)
+		}
+		return nil
 	}
 
 	jmaclient := &api.Client{BaseURL: cmd.SourceURL}
@@ -78,8 +87,10 @@ func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackCli
 
 	if err != nil {
 		msg.Text = err.Error()
-		_, err := client.PostMessage(ctx, msg)
-		return err
+		if _, postErr := client.PostMessage(ctx, msg); postErr != nil {
+			return commandError(postErr)
+		}
+		return nil
 	}
 	overview, _ := jmaclient.Overview(areas[0].Code)
 	// Overviewは無くていいので、エラーは無視する.
@@ -94,11 +105,8 @@ func (cmd ForecastCommand) Execute(ctx context.Context, client service.ISlackCli
 
 	// json.NewEncoder(os.Stderr).Encode(msg)
 
-	_, err = client.PostMessage(ctx, msg)
-	if err != nil {
-		msg.Text = err.Error()
-		_, err := client.PostMessage(ctx, msg)
-		return err
+	if _, err := client.PostMessage(ctx, msg); err != nil {
+		return commandError(err)
 	}
 
 	return nil

@@ -52,8 +52,8 @@ func (dc *dummycommand) Help() string {
 	return ""
 }
 
-func (dc *dummycommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) error {
-	return dc.err
+func (dc *dummycommand) Execute(ctx context.Context, client service.ISlackClient, event slackevents.AppMentionEvent) *CommandError {
+	return NewCommandError(dc.err, "test error")
 }
 
 func TestBot_Handle(t *testing.T) {
