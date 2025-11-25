@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	openai "github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -22,7 +23,7 @@ type AICompletion struct {
 }
 
 var (
-	channelChatModeOnmemoryCache = map[string]string{}
+	channelChatModeOnmemoryCache sync.Map
 )
 
 const (
@@ -40,15 +41,15 @@ const (
 )
 
 func (cmd AICompletion) getChannelTopic(ctx context.Context, client service.ISlackClient, id string) (string, error) {
-	if val, ok := channelChatModeOnmemoryCache[id]; ok {
+	if val, ok := channelChatModeOnmemoryCache.Load(id); ok {
 		fmt.Println("[INFO] topic cache hit for channel id: " + id)
-		return val, nil
+		return val.(string), nil
 	}
 	info, err := client.GetChannelInfo(ctx, id)
 	if err != nil {
 		return "", nil
 	}
-	channelChatModeOnmemoryCache[id] = info.Topic.Value
+	channelChatModeOnmemoryCache.Store(id, info.Topic.Value)
 	return info.Topic.Value, nil
 }
 
