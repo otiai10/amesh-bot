@@ -49,7 +49,7 @@ func (c *Controller) Webhook(w http.ResponseWriter, req *http.Request) {
 	render.JSON(http.StatusAccepted, marmoset.P{"message": "ok"})
 
 	// Fetch oauth information and recover Slack client
-	team := service.OAuthResponse{}
+	team := service.Team{}
 	key := fmt.Sprintf("Teams/%s", payload.TeamID)
 	if err := c.Datastore.Get(req.Context(), key, &team); err != nil {
 		// TODO: Fix
@@ -57,7 +57,7 @@ func (c *Controller) Webhook(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if payload.APIAppID == os.Getenv("DEV_SLACK_APP_ID") {
-		team.AccessToken = os.Getenv("DEV_SLACK_BOT_USER_OAUTH_TOKEN")
+		team.OAuth.AccessToken = os.Getenv("DEV_SLACK_BOT_USER_OAUTH_TOKEN")
 	}
 
 	payload.Event = cleanup(payload.Event)

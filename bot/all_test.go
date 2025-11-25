@@ -57,25 +57,25 @@ func (dc *dummycommand) Execute(ctx context.Context, client service.ISlackClient
 }
 
 func TestBot_Handle(t *testing.T) {
-	oauth := service.OAuthResponse{}
+	team := service.Team{}
 	event := slackevents.AppMentionEvent{Text: "@amesh"}
 	bot := Bot{Logger: &mockLogger{}}
 	ctx := context.Background()
-	bot.Handle(ctx, oauth, event)
+	bot.Handle(ctx, team, event)
 
 	m.When(t, "command returns error", func(t *testing.T) {
 		bot.Commands = append(bot.Commands, &dummycommand{err: fmt.Errorf("test_test")})
-		bot.Handle(ctx, oauth, event)
+		bot.Handle(ctx, team, event)
 
 		event.Text = "@amesh help"
-		bot.Handle(ctx, oauth, event)
+		bot.Handle(ctx, team, event)
 	})
 
 	m.When(t, "default set", func(t *testing.T) {
 		bot.Commands = []Command{}
 		bot.Default = &dummycommand{}
 		event.Text = "@amesh hoge"
-		bot.Handle(ctx, oauth, event)
+		bot.Handle(ctx, team, event)
 	})
 
 	m.When(t, "notfound set", func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestBot_Handle(t *testing.T) {
 		bot.Default = nil
 		bot.NotFound = &dummycommand{err: fmt.Errorf("error on notfound")}
 		event.Text = "@amesh hoge"
-		bot.Handle(ctx, oauth, event)
+		bot.Handle(ctx, team, event)
 	})
 }
 

@@ -30,8 +30,8 @@ type (
 	mockStorage struct{}
 )
 
-func (mb *mockBot) Handle(ctx context.Context, oauth service.OAuthResponse, event slackevents.AppMentionEvent) {
-
+func (mb *mockBot) Handle(ctx context.Context, team service.Team, event slackevents.AppMentionEvent) {
+	// noop
 }
 
 func (ms *mockSlack) ExchangeOAuthCodeWithAccessToken(context.Context, string) (*http.Response, error) {
