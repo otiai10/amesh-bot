@@ -16,9 +16,7 @@ const openaiBlockKitInstructions = `あなたはSlack Bot「amesh」です。ユ
 - blocks: Slack Block Kitブロックの配列
 
 ## 使用可能なブロックタイプ
-1. section: メインコンテンツ用。text.textは3000文字以内。長い回答はsectionブロックを分けて3000文字制限を守ること。
-2. divider: 区切り線。トピックが変わる時に使用。
-3. context: 補足情報やメタデータ用。elementsは最大10個。
+1. section: メインコンテンツ用。text.textは3000文字以内。長い回答はsectionブロックを分けて3000文字制限を守ること。回答の大部分はsectionブロックで構成すること。
 
 ## テキストフォーマット（Slack mrkdwn記法）
 - 太字: *太字*（標準Markdownの**太字**ではない）
@@ -51,10 +49,10 @@ var slackBlocksSchema = map[string]any{
 				"properties": map[string]any{
 					"type": map[string]any{
 						"type": "string",
-						"enum": []any{"section", "divider", "context"},
+						"enum": []any{"section"},
 					},
 					"text": map[string]any{
-						"type": []any{"object", "null"},
+						"type": "object",
 						"properties": map[string]any{
 							"type": map[string]any{"type": "string", "enum": []any{"mrkdwn"}},
 							"text": map[string]any{"type": "string"},
@@ -62,20 +60,8 @@ var slackBlocksSchema = map[string]any{
 						"required":             []any{"type", "text"},
 						"additionalProperties": false,
 					},
-					"elements": map[string]any{
-						"type": []any{"array", "null"},
-						"items": map[string]any{
-							"type": "object",
-							"properties": map[string]any{
-								"type": map[string]any{"type": "string", "enum": []any{"mrkdwn"}},
-								"text": map[string]any{"type": "string"},
-							},
-							"required":             []any{"type", "text"},
-							"additionalProperties": false,
-						},
-					},
 				},
-				"required":             []any{"type", "text", "elements"},
+				"required":             []any{"type", "text"},
 				"additionalProperties": false,
 			},
 		},
@@ -91,9 +77,8 @@ type slackBlockKitResponse struct {
 }
 
 type slackBlockJSON struct {
-	Type     string                `json:"type"`
-	Text     *slackTextObjectJSON  `json:"text"`
-	Elements []slackTextObjectJSON `json:"elements"`
+	Type string               `json:"type"`
+	Text *slackTextObjectJSON `json:"text"`
 }
 
 type slackTextObjectJSON struct {
@@ -129,33 +114,16 @@ func parseBlockKitResponse(output string) (fallbackText string, blocks []slack.B
 		resp.Blocks = resp.Blocks[:50]
 	}
 	for _, b := range resp.Blocks {
-		switch b.Type {
-		case "section":
-			if b.Text != nil && b.Text.Text != "" {
-				text := b.Text.Text
-				// Slack制限: SectionBlock textは最大3000文字
-				if len([]rune(text)) > 3000 {
-					text = string([]rune(text)[:3000])
-				}
-				textObj := slack.NewTextBlockObject(slack.MarkdownType, text, false, false)
-				blocks = append(blocks, slack.NewSectionBlock(textObj, nil, nil))
-			}
-		case "divider":
-			blocks = append(blocks, slack.NewDividerBlock())
-		case "context":
-			elements := b.Elements
-			// Slack制限: ContextBlockは最大10要素
-			if len(elements) > 10 {
-				elements = elements[:10]
-			}
-			var mixed []slack.MixedElement
-			for _, e := range elements {
-				mixed = append(mixed, slack.NewTextBlockObject(slack.MarkdownType, e.Text, false, false))
-			}
-			if len(mixed) > 0 {
-				blocks = append(blocks, slack.NewContextBlock("", mixed...))
-			}
+		if b.Type != "section" || b.Text == nil || b.Text.Text == "" {
+			continue
 		}
+		text := b.Text.Text
+		// Slack制限: SectionBlock textは最大3000文字
+		if len([]rune(text)) > 3000 {
+			text = string([]rune(text)[:3000])
+		}
+		textObj := slack.NewTextBlockObject(slack.MarkdownType, text, false, false)
+		blocks = append(blocks, slack.NewSectionBlock(textObj, nil, nil))
 	}
 	if len(blocks) == 0 {
 		return "", nil, fmt.Errorf("no valid blocks produced")

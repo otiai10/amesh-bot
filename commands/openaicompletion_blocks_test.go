@@ -18,18 +18,18 @@ func TestParseBlockKitResponse(t *testing.T) {
 	}{
 		{
 			name:         "sectionブロック単体",
-			input:        `{"fallback_text":"こんにちは","blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*こんにちは*、世界！"},"elements":null}]}`,
+			input:        `{"fallback_text":"こんにちは","blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*こんにちは*、世界！"}}]}`,
 			wantBlocks:   1,
 			wantFallback: "こんにちは",
 		},
 		{
-			name: "section+divider+context混合",
+			name: "複数sectionブロック",
 			input: mustJSON(slackBlockKitResponse{
 				FallbackText: "要約テスト",
 				Blocks: []slackBlockJSON{
-					{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: "本文です"}},
-					{Type: "divider"},
-					{Type: "context", Elements: []slackTextObjectJSON{{Type: "mrkdwn", Text: "補足情報"}}},
+					{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: "段落1"}},
+					{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: "段落2"}},
+					{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: "段落3"}},
 				},
 			}),
 			wantBlocks:   3,
@@ -48,7 +48,7 @@ func TestParseBlockKitResponse(t *testing.T) {
 		{
 			name: "未知のブロックタイプは無視される",
 			input: `{"fallback_text":"test","blocks":[
-				{"type":"unknown","text":null,"elements":null}
+				{"type":"unknown","text":null}
 			]}`,
 			wantErr: true,
 		},
@@ -64,30 +64,13 @@ func TestParseBlockKitResponse(t *testing.T) {
 			wantFallback: "長文",
 		},
 		{
-			name: "context elementsが10個超で切り詰め",
-			input: mustJSON(slackBlockKitResponse{
-				FallbackText: "ctx",
-				Blocks: []slackBlockJSON{
-					{Type: "context", Elements: func() []slackTextObjectJSON {
-						elems := make([]slackTextObjectJSON, 15)
-						for i := range elems {
-							elems[i] = slackTextObjectJSON{Type: "mrkdwn", Text: "e"}
-						}
-						return elems
-					}()},
-				},
-			}),
-			wantBlocks:   1,
-			wantFallback: "ctx",
-		},
-		{
 			name: "50ブロック超で切り詰め",
 			input: mustJSON(slackBlockKitResponse{
 				FallbackText: "many",
 				Blocks: func() []slackBlockJSON {
 					blocks := make([]slackBlockJSON, 55)
 					for i := range blocks {
-						blocks[i] = slackBlockJSON{Type: "divider"}
+						blocks[i] = slackBlockJSON{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: "x"}}
 					}
 					return blocks
 				}(),
@@ -101,7 +84,7 @@ func TestParseBlockKitResponse(t *testing.T) {
 				FallbackText: "nil-text",
 				Blocks: []slackBlockJSON{
 					{Type: "section", Text: nil},
-					{Type: "divider"},
+					{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: "有効"}},
 				},
 			}),
 			wantBlocks:   1,
@@ -113,23 +96,21 @@ func TestParseBlockKitResponse(t *testing.T) {
 				FallbackText: "empty-text",
 				Blocks: []slackBlockJSON{
 					{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: ""}},
-					{Type: "divider"},
+					{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: "有効"}},
 				},
 			}),
 			wantBlocks:   1,
 			wantFallback: "empty-text",
 		},
 		{
-			name: "contextのelementsが空は無視される",
-			input: mustJSON(slackBlockKitResponse{
-				FallbackText: "empty-ctx",
-				Blocks: []slackBlockJSON{
-					{Type: "context", Elements: []slackTextObjectJSON{}},
-					{Type: "divider"},
-				},
-			}),
+			name: "dividerやcontextは無視される",
+			input: `{"fallback_text":"ignore","blocks":[
+				{"type":"divider","text":null},
+				{"type":"section","text":{"type":"mrkdwn","text":"有効"}},
+				{"type":"context","text":null}
+			]}`,
 			wantBlocks:   1,
-			wantFallback: "empty-ctx",
+			wantFallback: "ignore",
 		},
 	}
 	for _, c := range cases {
@@ -171,28 +152,6 @@ func TestParseBlockKitResponse_SectionTruncation(t *testing.T) {
 	}
 	if len([]rune(section.Text.Text)) != 3000 {
 		t.Errorf("section text rune count: got %d, want 3000", len([]rune(section.Text.Text)))
-	}
-}
-
-func TestParseBlockKitResponse_ContextTruncation(t *testing.T) {
-	elems := make([]slackTextObjectJSON, 15)
-	for i := range elems {
-		elems[i] = slackTextObjectJSON{Type: "mrkdwn", Text: "e"}
-	}
-	input := mustJSON(slackBlockKitResponse{
-		FallbackText: "ctx",
-		Blocks:       []slackBlockJSON{{Type: "context", Elements: elems}},
-	})
-	_, blocks, err := parseBlockKitResponse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	ctx, ok := blocks[0].(*slack.ContextBlock)
-	if !ok {
-		t.Fatalf("expected ContextBlock, got %T", blocks[0])
-	}
-	if len(ctx.ContextElements.Elements) != 10 {
-		t.Errorf("context elements count: got %d, want 10", len(ctx.ContextElements.Elements))
 	}
 }
 
