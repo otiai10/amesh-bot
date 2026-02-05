@@ -32,12 +32,13 @@ const (
 	openaiPricingURL = "https://openai.com/pricing"
 	openaiStatusURL  = "https://status.openai.com/"
 
-	// GPT-4o Responses API out max tokens documented as ~16k output tokens.
-	// https://openai.com/blog/gpt-4o-mini-advancing-cost-efficient-intelligence
-	openaiMaxContext = int64(16000)
-	// GPT-5 model ID per OpenAI "Introducing GPT-5" (2025-08-07).
-	// https://openai.com/index/introducing-gpt-5
-	openaiDefaultModel = "gpt-5"
+	// GPT-5-nano max output tokens: 128k まで対応。
+	// Slack Bot用途では過剰なため 32k に設定。JSON構造のオーバーヘッドを考慮。
+	// https://platform.openai.com/docs/models/gpt-5-nano
+	openaiMaxOutputTokens = int64(32000)
+	// GPT-5-nano: GPT-5ファミリーの最軽量モデル。Structured Outputs対応。
+	// https://platform.openai.com/docs/models/gpt-5-nano
+	openaiDefaultModel = "gpt-5-nano"
 )
 
 func (cmd AICompletion) getChannelTopic(ctx context.Context, client service.ISlackClient, id string) (string, error) {
@@ -76,8 +77,6 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		return commandError(err)
 	}
 	msg := inreply(event, forceThreadReply)
-	markdown := true
-	msg.Mrkdwn = &markdown
 
 	tokens := largo.Tokenize(event.Text)[1:]
 
@@ -130,8 +129,10 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		Input: responses.ResponseNewParamsInputUnion{
 			OfInputItemList: responses.ResponseInputParam(inputItems),
 		},
-		MaxOutputTokens: openai.Int(openaiMaxContext),
+		Instructions:    openai.String(openaiBlockKitInstructions),
+		MaxOutputTokens: openai.Int(openaiMaxOutputTokens),
 		User:            openai.String(fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp)),
+		Text:            blockKitTextConfig(),
 	})
 	if err != nil {
 		text := fmt.Sprintf(":pleading_face: %v", openaiStatusURL)
@@ -159,7 +160,20 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		}
 		return cerr
 	}
-	msg.Text = output
+	// Block Kit JSONのパースを試行、失敗時はプレーンテキストにfallback
+	fallbackText, blocks, parseErr := parseBlockKitResponse(output)
+	if parseErr != nil {
+		markdown := true
+		msg.Mrkdwn = &markdown
+		msg.Text = output
+	} else {
+		msg.Blocks = blocks
+		if fallbackText != "" {
+			msg.Text = fallbackText
+		} else {
+			msg.Text = truncateForNotification(output)
+		}
+	}
 	if _, err := client.PostMessage(ctx, msg); err != nil {
 		cerr := commandError(err)
 		if cerr != nil && forceThreadReply && event.ThreadTimeStamp == "" {
