@@ -108,6 +108,18 @@ func TestParseBlockKitResponse(t *testing.T) {
 			wantFallback: "nil-text",
 		},
 		{
+			name: "text.textが空文字のsectionは無視される",
+			input: mustJSON(slackBlockKitResponse{
+				FallbackText: "empty-text",
+				Blocks: []slackBlockJSON{
+					{Type: "section", Text: &slackTextObjectJSON{Type: "mrkdwn", Text: ""}},
+					{Type: "divider"},
+				},
+			}),
+			wantBlocks:   1,
+			wantFallback: "empty-text",
+		},
+		{
 			name: "contextのelementsが空は無視される",
 			input: mustJSON(slackBlockKitResponse{
 				FallbackText: "empty-ctx",

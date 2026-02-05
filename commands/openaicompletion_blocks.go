@@ -131,7 +131,7 @@ func parseBlockKitResponse(output string) (fallbackText string, blocks []slack.B
 	for _, b := range resp.Blocks {
 		switch b.Type {
 		case "section":
-			if b.Text != nil {
+			if b.Text != nil && b.Text.Text != "" {
 				text := b.Text.Text
 				// Slack制限: SectionBlock textは最大3000文字
 				if len([]rune(text)) > 3000 {
