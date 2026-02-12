@@ -33,8 +33,8 @@ type (
 	}
 )
 
-func (b *Bot) Handle(ctx context.Context, team service.OAuthResponse, event slackevents.AppMentionEvent) {
-	client := service.NewSlackClient(team.AccessToken)
+func (b *Bot) Handle(ctx context.Context, team service.Team, event slackevents.AppMentionEvent) {
+	client := service.NewSlackClient(team.SlackAccessToken())
 
 	// if os.Getenv("DEV_SLACK_APP_ID") != "" {
 	// 	b.Logger.Log(logging.Entry{Severity: logging.Debug, Payload: event})

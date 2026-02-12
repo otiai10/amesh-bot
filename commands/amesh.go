@@ -46,7 +46,7 @@ func (cmd AmeshCommand) newFlagSet(animated *bool, help io.Writer) *largo.FlagSe
 
 // Match ...
 func (cmd AmeshCommand) Match(event slackevents.AppMentionEvent) bool {
-	fset := cmd.newFlagSet(nil, Discard)
+	fset := cmd.newFlagSet(nil, io.Discard)
 	fset.Parse(largo.Tokenize(event.Text)[1:])
 	return len(fset.Rest()) == 0
 }

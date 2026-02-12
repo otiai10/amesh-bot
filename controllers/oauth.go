@@ -51,7 +51,11 @@ func (c *Controller) OAuth(w http.ResponseWriter, req *http.Request) {
 	}
 
 	key := fmt.Sprintf("Teams/%s", oauth.Team.ID)
-	if err := c.Datastore.Set(req.Context(), key, oauth); err != nil {
+	team := service.Team{
+		ID:    oauth.Team.ID,
+		OAuth: oauth,
+	}
+	if err := c.Datastore.Set(req.Context(), key, team); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

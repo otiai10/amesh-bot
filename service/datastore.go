@@ -37,9 +37,14 @@ func (d *Datastore) Get(ctx context.Context, path string, dest interface{}) erro
 	if err != nil {
 		return err
 	}
+	data := doc.Data()
 
 	if err := doc.DataTo(dest); err != nil {
 		return err
+	}
+
+	if team, ok := dest.(*Team); ok {
+		team.backfillLegacy(data)
 	}
 
 	return nil
