@@ -33,10 +33,10 @@ const (
 	openaiStatusURL  = "https://status.openai.com/"
 
 	// GPT-5-nano max output tokens: 128k まで対応。
-	// Slack Bot用途では過剰なため 32k に設定。JSON構造のオーバーヘッドを考慮。
+	// Slack Bot用途では過剰なため 16k に設定。
 	// https://platform.openai.com/docs/models/gpt-5-nano
-	openaiMaxOutputTokens = int64(32000)
-	// GPT-5-nano: GPT-5ファミリーの最軽量モデル。Structured Outputs対応。
+	openaiMaxOutputTokens = int64(16000)
+	// GPT-5-nano: GPT-5ファミリーの最軽量モデル。
 	// https://platform.openai.com/docs/models/gpt-5-nano
 	openaiDefaultModel = "gpt-5-nano"
 )
@@ -129,10 +129,9 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		Input: responses.ResponseNewParamsInputUnion{
 			OfInputItemList: responses.ResponseInputParam(inputItems),
 		},
-		Instructions:    openai.String(openaiBlockKitInstructions),
+		Instructions:    openai.String(openaiSlackInstructions),
 		MaxOutputTokens: openai.Int(openaiMaxOutputTokens),
 		User:            openai.String(fmt.Sprintf("%s:%s", event.Channel, event.TimeStamp)),
-		Text:            blockKitTextConfig(),
 	})
 	if err != nil {
 		text := fmt.Sprintf(":pleading_face: %v", openaiStatusURL)
@@ -160,20 +159,9 @@ func (cmd AICompletion) Execute(ctx context.Context, client service.ISlackClient
 		}
 		return cerr
 	}
-	// Block Kit JSONのパースを試行、失敗時はプレーンテキストにfallback
-	fallbackText, blocks, parseErr := parseBlockKitResponse(output)
-	if parseErr != nil {
-		markdown := true
-		msg.Mrkdwn = &markdown
-		msg.Text = output
-	} else {
-		msg.Blocks = blocks
-		if fallbackText != "" {
-			msg.Text = fallbackText
-		} else {
-			msg.Text = truncateForNotification(output)
-		}
-	}
+	markdown := true
+	msg.Mrkdwn = &markdown
+	msg.Text = output
 	if _, err := client.PostMessage(ctx, msg); err != nil {
 		cerr := commandError(err)
 		if cerr != nil && forceThreadReply && event.ThreadTimeStamp == "" {
